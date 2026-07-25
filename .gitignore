@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+
+# Generated skill artifacts
+*-workspace/
+eval-results/
+previews/
+tmp/
