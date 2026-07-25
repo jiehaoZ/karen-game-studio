@@ -1,7 +1,8 @@
 # Karen Game Studio
 
 Reusable Agent Skills for game development, visual design, and production
-workflows.
+workflows. The skills follow the open Agent Skills format and are intended for
+compatible coding agents rather than a single vendor or runtime.
 
 ## Available skills
 
@@ -14,19 +15,21 @@ workflows.
 List the skills in this repository:
 
 ```bash
-npx skills add <github-owner>/karen-game-studio --list
+npx skills add jiehaoZ/karen-game-studio --list
 ```
 
-Install `ui-preview-compare` globally for Codex:
+Install `ui-preview-compare`:
 
 ```bash
-npx skills add <github-owner>/karen-game-studio \
-  --skill ui-preview-compare \
-  --agent codex \
-  --global
+npx skills add jiehaoZ/karen-game-studio \
+  --skill ui-preview-compare
 ```
 
-For local development, replace the GitHub repository with this repository's
+The Skills CLI detects supported coding agents and lets you choose the install
+target and scope. Add `--global` for a user-wide installation, or use
+`--agent <agent-name>` when you want to target a specific compatible agent.
+
+For local development, replace `jiehaoZ/karen-game-studio` with this repository's
 absolute path.
 
 ## Repository structure
