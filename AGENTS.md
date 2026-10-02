@@ -1,7 +1,8 @@
 # Repository instructions
 
 This repository contains independently installable Agent Skills for game
-development and adjacent visual workflows.
+development and adjacent visual workflows, plus local-first browser tools for
+preparing game assets.
 
 ## Structure
 
@@ -12,6 +13,8 @@ development and adjacent visual workflows.
 - Put optional supporting documentation in `references/`.
 - Put templates and static resources in `assets/`.
 - Do not create empty resource directories.
+- Keep every browser tool under `tools/<tool-name>/` with its own `index.html`.
+- Keep skills and tools independent of each other.
 
 ## Quality
 
@@ -26,8 +29,22 @@ development and adjacent visual workflows.
 - Do not commit generated previews, evaluation output, credentials, caches, or
   machine-specific files.
 
+## Tools
+
+- Tools must run by opening `index.html` from `file://`: no build step, no
+  network requests, no runtime dependencies. Use plain `<script>` tags, not ES
+  modules.
+- `ssim.js`, `quantize.js`, `png.js`, `compress.js`, and `zip.js` are duplicated
+  byte-for-byte between `tools/aligner/js/` and `tools/matte/js/`. Change both
+  copies together.
+- Follow the shared design language in `tools/README.md`.
+- Run `node --test tests/*.test.js` in the tool's directory before committing.
+- Register a new tool on the board in `tools/index.html`.
+
 ## Changes
 
 - Update the root skill catalog when adding, renaming, or removing a skill.
+- Update the root tool catalog and `tools/README.md` when adding, renaming, or
+  removing a tool.
 - Record user-visible behavior changes in `CHANGELOG.md`.
 - Preserve existing skill names unless a migration is intentionally planned.

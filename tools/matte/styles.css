@@ -1,0 +1,816 @@
+/*
+ * Matte — the same bench, a different tool
+ * ===========================================================================
+ *
+ * Shares aligner's palette and type verbatim. Cyan is interactive, amber is
+ * fixture, and the ground stays a warm graphite so a cut-out is judged against
+ * a surround that never shifts.
+ *
+ * The one addition is the preview plate, which can swap between a checkerboard
+ * and flat dark/light grounds. That is not decoration: a semi-transparent edge
+ * reads completely differently over each, and being unable to switch is how
+ * people ship mattes with fringes they never saw.
+ */
+
+:root {
+  /* Bench — warm blacks, the colour of anodised metal under low light. */
+  --table-deep: #0b0a09;
+  --table: #131110;
+  --panel: #1a1817;
+  --raised: #241f1d;
+  --raised-hi: #2f2926;
+  --rule: #2e2926;
+  --rule-soft: #221e1c;
+
+  /* Type — warm off-white, never pure #fff on a warm ground. */
+  --ink: #ebe6df;
+  --ink-soft: #9d958a;
+  /*
+   * Verified at 4.98:1 on the wall and 4.68:1 on a panel — above the 4.5:1 AA
+   * floor for body text. The obvious darker grey for "quiet" text came in at
+   * 3.23:1, which fails, and these are the smallest type on the page.
+   */
+  --ink-faint: #8a8279;
+
+  /* The two signal colours. */
+  --glow: #6fd8ce;          /* cold light: selection, active, interactive */
+  --glow-dim: rgba(111, 216, 206, 0.13);
+  --glow-ink: #08201e;
+  --peg: #e8a33d;           /* amber: the registration target */
+  --peg-dim: rgba(232, 163, 61, 0.14);
+  --alert: #e0674f;
+
+  --mono: 'Chivo Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Segoe UI', sans-serif;
+
+  --topbar-h: 54px;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* { box-sizing: border-box; }
+
+/*
+ * `hidden` only sets a default of display:none, so any later display rule
+ * silently outranks it. Several elements here are hidden by attribute and laid
+ * out with flex/grid — without this the drop veil becomes an invisible
+ * full-screen click trap over the whole UI.
+ */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--table);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+/* Focus is never removed — only restyled to suit the bench. */
+:focus-visible {
+  outline: 1.5px solid var(--glow);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection { background: var(--glow-dim); color: var(--ink); }
+
+/* Numerals and technical labels are set in the stencil face. */
+.mono, input[type="number"], .stage-status, .item-scale, .readout,
+.numeric-plain, .export-log, .progress-label, .count, .stat-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+}
+
+/* ═══ topbar ═══════════════════════════════════════════════════════════ */
+
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1rem;
+  background: linear-gradient(180deg, var(--panel), #171514);
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+  z-index: 10;
+}
+
+/*
+ * The way back to the tool wall. A tool opened from the homepage otherwise
+ * becomes a dead end — there is no in-page route back, and expecting people to
+ * reach for the browser's back button is the navigation equivalent of a
+ * shrug. Sits before the title so it reads as "up one level", not as a control
+ * belonging to this tool.
+ */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .34rem .6rem .34rem .45rem;
+  margin-right: .1rem;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: .76rem;
+  white-space: nowrap;
+  flex: none;
+  transition: background .15s var(--ease), border-color .15s var(--ease),
+    color .15s var(--ease);
+}
+.back-link:hover {
+  background: var(--raised);
+  border-color: var(--raised-hi);
+  color: var(--ink);
+}
+.back-link svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform .15s var(--ease);
+}
+.back-link:hover svg { transform: translateX(-2px); }
+
+.brand { display: flex; align-items: center; gap: .6rem; }
+
+/*
+ * Peg bar: the three-hole strip every cel was punched with and registered on.
+ * It is the oldest possible statement of what this tool does.
+ */
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 5px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  flex: none;
+}
+.mark i {
+  display: block;
+  width: 4px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--peg);
+  opacity: .85;
+}
+.mark i:nth-child(2) { width: 8px; }
+
+.brand h1 {
+  font-family: var(--mono);
+  font-size: .76rem;
+  font-weight: 400;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.canvas-size {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-left: auto;
+}
+
+.canvas-size label {
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: .35rem;
+}
+
+.canvas-size input { width: 66px; text-align: center; }
+.times, .unit { color: var(--ink-faint); font-size: .75rem; }
+.unit { font-family: var(--mono); }
+
+.topbar-actions { display: flex; gap: .6rem; align-items: center; }
+
+/* Undo/redo read as one two-position control, not two loose buttons. */
+.history-group {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.history-group button {
+  border: 0;
+  border-radius: 0;
+  padding: .38rem .5rem;
+}
+.history-group button + button { border-left: 1px solid var(--rule); }
+
+button.icon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+button.icon svg { width: 15px; height: 15px; display: block; }
+
+kbd {
+  font-family: var(--mono);
+  font-size: .93em;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: .05em .35em;
+  color: var(--ink-soft);
+  background: var(--table-deep);
+}
+
+/* ═══ form controls ════════════════════════════════════════════════════ */
+
+input[type="number"], select {
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .34rem .5rem;
+  min-width: 0;
+  transition: border-color .15s var(--ease), background .15s var(--ease);
+}
+
+input[type="number"]:hover, select:hover { border-color: var(--raised-hi); }
+input[type="number"]:focus, select:focus {
+  border-color: var(--glow);
+  outline: none;
+  background: #0e0d0c;
+}
+
+select { width: 100%; cursor: pointer; font-size: .78rem; }
+
+button {
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .42rem .8rem;
+  cursor: pointer;
+  font-size: .78rem;
+  transition: background .15s var(--ease), border-color .15s var(--ease),
+    color .15s var(--ease);
+}
+
+button:hover:not(:disabled) { background: var(--raised-hi); border-color: #3b3431; }
+button:active:not(:disabled) { background: var(--raised); }
+button:disabled { opacity: .35; cursor: not-allowed; }
+
+button.primary {
+  background: var(--glow);
+  border-color: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+button.primary:hover:not(:disabled) {
+  background: #86e5db;
+  border-color: #86e5db;
+  box-shadow: 0 0 18px -4px var(--glow-dim);
+}
+
+button.ghost { background: transparent; }
+button.ghost:hover:not(:disabled) { background: var(--raised); }
+button.ghost[aria-pressed="true"] {
+  background: var(--glow-dim);
+  border-color: rgba(111, 216, 206, .45);
+  color: var(--glow);
+}
+
+button.wide { width: 100%; }
+
+/* Sliders read as a machined track with a lit thumb. */
+input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: .35rem 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--rule);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 4px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--glow);
+  margin-top: -6px;
+  box-shadow: 0 0 10px -2px var(--glow);
+  transition: height .15s var(--ease);
+}
+input[type="range"]:hover::-webkit-slider-thumb { height: 18px; margin-top: -8px; }
+input[type="range"]::-moz-range-track { height: 2px; background: var(--rule); }
+input[type="range"]::-moz-range-thumb {
+  width: 4px; height: 14px; border: 0; border-radius: 1px;
+  background: var(--glow); box-shadow: 0 0 10px -2px var(--glow);
+}
+
+/* ═══ workspace ═══════════════════════════════════════════════════════ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  height: calc(100vh - var(--topbar-h));
+}
+
+.stage {
+  background: var(--table-deep);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.stage-inner {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  overflow: auto;
+  min-height: 0;
+  position: relative;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 46%, rgba(180, 205, 215, .06), transparent 70%);
+}
+
+/*
+ * The plate the result sits on. Its ground is switchable because a fringe that
+ * is invisible on checkerboard can be obvious on flat white, and vice versa —
+ * judging an alpha edge against a single background is how bad mattes ship.
+ */
+.plate {
+  position: relative;
+  line-height: 0;
+  box-shadow:
+    0 0 0 1px rgba(235, 230, 223, .28),
+    0 18px 50px -20px rgba(0, 0, 0, .9);
+}
+
+.plate[data-backdrop="checker"] {
+  background-color: #23282d;
+  background-image:
+    linear-gradient(45deg, #2b3036 25%, transparent 25%, transparent 75%, #2b3036 75%),
+    linear-gradient(45deg, #2b3036 25%, transparent 25%, transparent 75%, #2b3036 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+.plate[data-backdrop="dark"] { background: #0a0a0b; }
+.plate[data-backdrop="light"] { background: #f2f0ed; }
+
+.plate canvas { display: block; }
+.plate.picking { cursor: crosshair; }
+
+.stage-hint {
+  position: absolute;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .8rem;
+  line-height: 1.9;
+  pointer-events: none;
+  margin: 0;
+  max-width: 34em;
+  padding: 1.15rem 1.5rem;
+  background: rgba(11, 10, 9, .86);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.stage-hint .dim {
+  display: inline-block;
+  margin-top: .55rem;
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .04em;
+  line-height: 1.9;
+  color: var(--ink-faint);
+}
+
+.stage-status {
+  border-top: 1px solid var(--rule);
+  padding: .45rem .9rem;
+  font-size: .68rem;
+  letter-spacing: .03em;
+  color: var(--ink-faint);
+  min-height: 28px;
+  background: var(--panel);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stage-status::-webkit-scrollbar { display: none; }
+
+/* View and backdrop switches live in the topbar. */
+.view-switch {
+  display: flex;
+  gap: 2px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px;
+}
+.view-switch button {
+  border: 0;
+  background: transparent;
+  padding: .3rem .7rem;
+  font-size: .75rem;
+  border-radius: 2px;
+  color: var(--ink-soft);
+}
+.view-switch button:hover { background: var(--raised); }
+.view-switch button.active { background: var(--raised-hi); color: var(--ink); }
+
+/* ═══ panel ════════════════════════════════════════════════════════════ */
+
+.panel {
+  background: var(--panel);
+  border-left: 1px solid var(--rule);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--raised-hi) transparent;
+}
+.panel::-webkit-scrollbar { width: 9px; }
+.panel::-webkit-scrollbar-thumb {
+  background: var(--raised);
+  border: 3px solid var(--panel);
+  border-radius: 5px;
+}
+
+.block {
+  padding: 1rem 1.05rem 1.15rem;
+  border-bottom: 1px solid var(--rule-soft);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.block h2 {
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.count {
+  background: var(--raised);
+  border-radius: 2px;
+  padding: .05rem .38rem;
+  font-size: .64rem;
+  color: var(--ink-soft);
+}
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+
+.field > label, .field-head label {
+  font-size: .75rem;
+  color: var(--ink-soft);
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.numeric { display: flex; align-items: center; gap: .25rem; }
+.numeric input { width: 76px; text-align: right; }
+.numeric-plain { font-size: .76rem; color: var(--ink); }
+
+/*
+ * min-width:0 on both the track and the input: a grid item's default
+ * min-width:auto refuses to shrink below the input's intrinsic size, which
+ * pushes the second column straight out past the panel edge.
+ */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.row2 > div { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.row2 label { font-size: .72rem; color: var(--ink-soft); }
+.row2 input { text-align: right; width: 100%; min-width: 0; }
+
+/* Rendered-size readout: the number you actually align against. */
+.readout {
+  font-size: .68rem;
+  color: var(--ink-faint);
+  margin: .15rem 0 0;
+  letter-spacing: .02em;
+  line-height: 1.7;
+}
+.readout b {
+  color: var(--peg);
+  font-weight: 400;
+}
+
+.button-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.button-row button { padding: .42rem .25rem; font-size: .74rem; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .77rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.check:hover { color: var(--ink); }
+.check input { accent-color: var(--glow); cursor: pointer; margin: 0; }
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px;
+}
+.segmented button {
+  border: 0;
+  background: transparent;
+  padding: .32rem;
+  font-size: .75rem;
+  border-radius: 2px;
+  color: var(--ink-soft);
+}
+.segmented button:hover { background: var(--raised); }
+.segmented button.active { background: var(--raised-hi); color: var(--ink); }
+
+.hint {
+  font-size: .71rem;
+  color: var(--ink-faint);
+  line-height: 1.75;
+  margin: 0;
+}
+.hint strong { color: var(--ink-soft); font-weight: 500; }
+
+.empty-note {
+  font-size: .73rem;
+  color: var(--ink-faint);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ═══ layers — an exposure sheet ═══════════════════════════════════════ */
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: .55rem;
+  padding: .35rem .45rem;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  background: var(--table-deep);
+  transition: background .13s var(--ease), border-color .13s var(--ease);
+}
+.item:hover { background: var(--raised); }
+.item.selected {
+  background: var(--glow-dim);
+  border-left-color: var(--glow);
+}
+
+.item-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  background: #100e0d;
+  border-radius: 2px;
+  display: block;
+}
+
+.item-name {
+  font-size: .75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-scale { font-size: .68rem; color: var(--ink-faint); }
+.item.selected .item-scale { color: var(--glow); }
+
+.item-actions { display: flex; gap: 1px; }
+.item-actions button {
+  background: transparent;
+  border: 0;
+  padding: .3rem;
+  color: var(--ink-faint);
+  border-radius: 2px;
+  line-height: 0;
+  display: grid;
+  place-items: center;
+}
+.item-actions button:hover { background: var(--raised-hi); color: var(--ink); }
+.item-actions button.off { opacity: .4; }
+.item-actions button.remove:hover { color: var(--alert); background: rgba(224, 103, 79, .12); }
+.item-actions svg { width: 13px; height: 13px; display: block; }
+
+/* ═══ export ═══════════════════════════════════════════════════════════ */
+
+.progress { display: flex; flex-direction: column; gap: .35rem; }
+
+.progress-bar {
+  height: 2px;
+  background: var(--table-deep);
+  overflow: hidden;
+}
+.progress-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--glow);
+  box-shadow: 0 0 8px var(--glow);
+  transition: width .2s var(--ease);
+}
+
+.progress-label {
+  font-size: .68rem;
+  color: var(--ink-faint);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-log {
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .55rem .65rem;
+  font-size: .67rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  max-height: 200px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.export-log .row { display: flex; justify-content: space-between; gap: .6rem; }
+.export-log .row span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.export-log .saved { color: var(--glow); }
+.export-log .total {
+  border-top: 1px solid var(--rule);
+  margin-top: .4rem;
+  padding-top: .4rem;
+  color: var(--ink);
+}
+
+/* ═══ drop veil ════════════════════════════════════════════════════════ */
+
+.drop-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 10, 9, .9);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: veil-in .16s var(--ease);
+}
+.drop-veil::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px dashed var(--glow);
+  border-radius: 4px;
+  opacity: .5;
+}
+.drop-veil p {
+  font-family: var(--mono);
+  font-size: .8rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--glow);
+  margin: 0;
+}
+
+@keyframes veil-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ═══ responsive ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .workspace { grid-template-columns: 1fr; height: auto; }
+  .panel { border-left: 0; border-top: 1px solid var(--rule); }
+  .stage { min-height: 56vh; }
+  .topbar { flex-wrap: wrap; height: auto; padding: .65rem 1rem; gap: .8rem; }
+  .canvas-size { margin-left: 0; }
+  .back-link span { display: none; }
+  .back-link { padding: .34rem .45rem; }
+  /* Comfortable touch targets once this is being poked at rather than clicked. */
+  .layer { padding: .5rem; }
+  .item-actions button { padding: .55rem; }
+  button { padding: .55rem .9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ═══ matte-specific controls ══════════════════════════════════════════ */
+
+.mode-switch { grid-template-columns: repeat(3, 1fr); }
+
+/*
+ * Declared after the generic `.segmented` block, not before it. At equal
+ * specificity source order decides, and an earlier three-column rule loses to
+ * the later two-column default — which is what folded this control onto two
+ * rows 50px wide.
+ */
+.backdrop-switch {
+  grid-template-columns: repeat(3, 1fr);
+  width: auto;
+  flex: none;
+}
+.backdrop-switch button {
+  padding: .32rem .55rem;
+  font-size: .8rem;
+  line-height: 1;
+}
+
+.swatch-row { display: flex; gap: .5rem; align-items: center; }
+.swatch-row input[type="color"] {
+  width: 44px;
+  height: 30px;
+  padding: 2px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+  flex: none;
+}
+.swatch-row button { flex: 1; }
+.swatch-row button[aria-pressed="true"] {
+  background: var(--glow-dim);
+  border-color: rgba(111, 216, 206, .45);
+  color: var(--glow);
+}
+
+/*
+ * The routing verdict. Amber rather than red — a non-flat backdrop is not an
+ * error, it just means this layer is the wrong instrument and the model is the
+ * right one.
+ */
+.verdict {
+  font-size: .73rem;
+  line-height: 1.7;
+  margin: 0;
+  padding: .55rem .7rem;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  background: var(--table-deep);
+}
+.verdict.flat { border-left: 2px solid var(--glow); }
+.verdict.rough { border-left: 2px solid var(--peg); }
+.verdict b { color: var(--ink); font-weight: 500; }
+
+.item-mark {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .06em;
+  padding: .1em .35em;
+  border-radius: 2px;
+  background: var(--raised);
+  color: var(--ink-faint);
+}
+.item.selected .item-mark { color: var(--glow); }
+.item-mark.ai { background: var(--glow-dim); color: var(--glow); }
+
+#aiState { text-transform: none; letter-spacing: .04em; }
+#aiState.ready { background: var(--glow-dim); color: var(--glow); }

@@ -1,8 +1,14 @@
 .DS_Store
+._*
 .venv/
 node_modules/
 __pycache__/
 *.pyc
+*.log
+.env
+.env.local
+.env.*.local
+coverage/
 
 # Generated skill artifacts
 *-workspace/

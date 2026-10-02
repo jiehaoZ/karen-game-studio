@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Matte — 纯色背景抠图</title>
+<link rel="stylesheet" href="fonts.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back-link" href="../index.html" title="返回工具板">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M13 8H3.5M7 4.5 3.5 8 7 11.5" />
+    </svg>
+    <span>工具板</span>
+  </a>
+
+  <div class="brand">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <h1>Matte</h1>
+  </div>
+
+  <div class="view-switch" role="radiogroup" aria-label="预览内容">
+    <button type="button" data-view="result" class="active" role="radio" aria-checked="true">结果</button>
+    <button type="button" data-view="alpha" role="radio" aria-checked="false">Alpha</button>
+    <button type="button" data-view="source" role="radio" aria-checked="false">原图</button>
+  </div>
+
+  <div class="topbar-actions">
+    <div class="segmented backdrop-switch" role="radiogroup" aria-label="预览底色">
+      <button type="button" data-backdrop="checker" class="active" role="radio" aria-checked="true" title="棋盘格">▦</button>
+      <button type="button" data-backdrop="dark" role="radio" aria-checked="false" title="深色底">■</button>
+      <button type="button" data-backdrop="light" role="radio" aria-checked="false" title="浅色底">□</button>
+    </div>
+    <button type="button" id="importBtn" class="primary">导入图片</button>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden />
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="stage" id="stage" aria-label="预览">
+    <div class="stage-inner">
+      <div class="plate" id="plate" data-backdrop="checker">
+        <canvas id="previewCanvas"></canvas>
+      </div>
+      <p class="stage-hint" id="stageHint">
+        把图片拖到这里，或按 <kbd>⌘V</kbd> 粘贴，也可以点右上角「导入图片」。
+        <span class="dim">
+          黑底、白底、绿幕都可以 &middot; 导入时自动判断<br />
+          复杂背景请用下方的 AI 抠图
+        </span>
+      </p>
+    </div>
+    <div class="stage-status" id="stageStatus" role="status"></div>
+  </section>
+
+  <aside class="panel">
+
+    <section class="block">
+      <h2>图片 <span class="count" id="itemCount">0</span></h2>
+      <ul class="item-list" id="itemList"></ul>
+      <p class="empty-note" id="itemEmpty">还没有图片。</p>
+    </section>
+
+    <section class="block" id="keyBlock" hidden>
+      <h2>背景</h2>
+
+      <div class="segmented mode-switch" role="radiogroup" aria-label="背景类型">
+        <button type="button" data-mode="black" role="radio" aria-checked="false">黑底</button>
+        <button type="button" data-mode="white" role="radio" aria-checked="false">白底</button>
+        <button type="button" data-mode="color" role="radio" aria-checked="false">取色</button>
+      </div>
+
+      <div class="field" id="colorField" hidden>
+        <div class="field-head">
+          <label for="bgSwatch">背景色</label>
+          <span class="numeric-plain" id="bgValue">—</span>
+        </div>
+        <div class="swatch-row">
+          <input type="color" id="bgSwatch" aria-label="背景色" />
+          <button type="button" id="pickBtn" class="ghost">在图上取色</button>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="softness">容差</label>
+            <span class="numeric-plain" id="softnessValue">25%</span>
+          </div>
+          <input type="range" id="softness" min="1" max="100" step="1" value="25" />
+        </div>
+      </div>
+
+      <p class="verdict" id="verdict"></p>
+    </section>
+
+    <section class="block" id="scopeBlock" hidden>
+      <h2>抠除范围</h2>
+
+      <div class="segmented scope-switch" role="radiogroup" aria-label="抠除范围">
+        <button type="button" data-scope="outside" role="radio" aria-checked="true">主体外背景</button>
+        <button type="button" data-scope="all" role="radio" aria-checked="false">全图同色</button>
+      </div>
+
+      <p class="hint" id="scopeHint"></p>
+    </section>
+
+    <section class="block" id="levelBlock" hidden>
+      <h2>边缘</h2>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="low">透明阈值</label>
+          <span class="numeric-plain" id="lowValue">4%</span>
+        </div>
+        <input type="range" id="low" min="0" max="60" step="1" value="4" />
+        <p class="hint">调高可以清掉背景上的噪点和压缩杂色。</p>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="high">不透明阈值</label>
+          <span class="numeric-plain" id="highValue">92%</span>
+        </div>
+        <input type="range" id="high" min="40" max="100" step="1" value="92" />
+        <p class="hint">调低可以让主体更实心 &mdash; 深色主体在黑底上尤其需要。</p>
+      </div>
+
+      <div class="field" id="despillField" hidden>
+        <div class="field-head">
+          <label for="despill">去溢色</label>
+          <span class="numeric-plain" id="despillValue">80%</span>
+        </div>
+        <input type="range" id="despill" min="0" max="100" step="1" value="80" />
+        <p class="hint">绿幕的光会打到主体上，这一项把它拉回来。</p>
+      </div>
+
+      <button type="button" id="applyAllBtn" class="ghost wide">把这套参数应用到全部图片</button>
+    </section>
+
+    <section class="block" id="aiBlock" hidden>
+      <h2>AI 抠图 <span class="chip" id="aiState">未安装</span></h2>
+      <p class="hint" id="aiHint">
+        背景不是纯色时用它。BiRefNet lite 模型约 111 MB，
+        <strong>首次使用时才下载</strong>，之后存在本机、离线可用。
+      </p>
+      <label class="check" id="aiToggleRow" hidden>
+        <input type="checkbox" id="aiToggle" />
+        <span>这张图用 AI 抠图结果</span>
+      </label>
+      <div class="button-row">
+        <button type="button" id="aiRunBtn" class="ghost">对这张图运行</button>
+        <button type="button" id="aiRemoveBtn" class="ghost" hidden>删除模型</button>
+      </div>
+      <div class="progress" id="aiProgress" hidden>
+        <div class="progress-bar"><span id="aiProgressFill"></span></div>
+        <p class="progress-label" id="aiProgressLabel"></p>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>导出</h2>
+      <div class="field">
+        <label for="formatSelect">格式</label>
+        <select id="formatSelect">
+          <option value="image/png" selected>PNG &mdash; 减色调色板，兼容性最好</option>
+          <option value="image/webp">WebP &mdash; 体积更小，也支持透明</option>
+        </select>
+        <p class="hint">
+          抠图结果必须带透明通道，所以没有 JPEG。
+        </p>
+        <p class="hint">
+          两种格式都会<strong>压到刚好看不出差别为止</strong>：逐档压缩，每档都和抠图结果
+          逐像素比对结构相似度，压到再降一档就要露出痕迹时退回上一档。
+          PNG 降的是调色板大小 &mdash; 抠图结果通常只有几十种颜色，
+          而画布给出的永远是 32 位真彩。
+        </p>
+      </div>
+      <button type="button" id="exportBtn" class="primary wide" disabled>导出 ZIP</button>
+      <div class="progress" id="progress" hidden>
+        <div class="progress-bar"><span id="progressFill"></span></div>
+        <p class="progress-label" id="progressLabel"></p>
+      </div>
+      <div class="export-log" id="exportLog" hidden></div>
+    </section>
+
+  </aside>
+</main>
+
+<div class="drop-veil" id="dropVeil" hidden><p>松手导入</p></div>
+
+<script src="js/zip.js"></script>
+<script src="js/ssim.js"></script>
+<script src="js/quantize.js"></script>
+<script src="js/png.js"></script>
+<script src="js/compress.js"></script>
+<script src="js/key.js"></script>
+<script src="js/detect.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

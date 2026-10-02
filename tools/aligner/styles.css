@@ -1,0 +1,820 @@
+/*
+ * Canvas Aligner — light table
+ * ===========================================================================
+ *
+ * Design direction: an animator's light table.
+ *
+ * Onion skinning is not a metaphor borrowed from somewhere else — it is
+ * literally this tool's ancestor. Animators stacked cels on a backlit glass
+ * plate and registered them against peg holes to judge whether drawings lined
+ * up. This interface is the same act with the same problem, so it borrows that
+ * room rather than inventing a look: a warm graphite bench, a plate of cold
+ * light under the artwork, amber registration marks, and readouts set in a
+ * drafting stencil.
+ *
+ * Colour has two jobs and never mixes them: cold light (--glow) means "this is
+ * the layer you are working on", amber (--peg) means "this is the target to
+ * register against". Nothing else competes for either.
+ *
+ * Committed to a single dark theme. Image tools do this because a surround
+ * that changes brightness changes how you read the artwork sitting on it, and
+ * judging edges and sizes is the entire job here.
+ */
+
+:root {
+  /* Bench — warm blacks, the colour of anodised metal under low light. */
+  --table-deep: #0b0a09;
+  --table: #131110;
+  --panel: #1a1817;
+  --raised: #241f1d;
+  --raised-hi: #2f2926;
+  --rule: #2e2926;
+  --rule-soft: #221e1c;
+
+  /* Type — warm off-white, never pure #fff on a warm ground. */
+  --ink: #ebe6df;
+  --ink-soft: #9d958a;
+  /*
+   * Verified at 4.98:1 on the wall and 4.68:1 on a panel — above the 4.5:1 AA
+   * floor for body text. The obvious darker grey for "quiet" text came in at
+   * 3.23:1, which fails, and these are the smallest type on the page.
+   */
+  --ink-faint: #8a8279;
+
+  /* The two signal colours. */
+  --glow: #6fd8ce;          /* cold light: selection, active, interactive */
+  --glow-dim: rgba(111, 216, 206, 0.13);
+  --glow-ink: #08201e;
+  --peg: #e8a33d;           /* amber: the registration target */
+  --peg-dim: rgba(232, 163, 61, 0.14);
+  --alert: #e0674f;
+
+  --mono: 'Chivo Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Segoe UI', sans-serif;
+
+  --topbar-h: 54px;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* { box-sizing: border-box; }
+
+/*
+ * `hidden` only sets a default of display:none, so any later display rule
+ * silently outranks it. Several elements here are hidden by attribute and laid
+ * out with flex/grid — without this the drop veil becomes an invisible
+ * full-screen click trap over the whole UI.
+ */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--table);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+/* Focus is never removed — only restyled to suit the bench. */
+:focus-visible {
+  outline: 1.5px solid var(--glow);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection { background: var(--glow-dim); color: var(--ink); }
+
+/* Numerals and technical labels are set in the stencil face. */
+.mono, input[type="number"], .stage-status, .layer-scale, .readout,
+.numeric-plain, .export-log, .progress-label, .count, .stat-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+}
+
+/* ═══ topbar ═══════════════════════════════════════════════════════════ */
+
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1rem;
+  background: linear-gradient(180deg, var(--panel), #171514);
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+  z-index: 10;
+}
+
+/*
+ * The way back to the tool wall. A tool opened from the homepage otherwise
+ * becomes a dead end — there is no in-page route back, and expecting people to
+ * reach for the browser's back button is the navigation equivalent of a
+ * shrug. Sits before the title so it reads as "up one level", not as a control
+ * belonging to this tool.
+ */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .34rem .6rem .34rem .45rem;
+  margin-right: .1rem;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: .76rem;
+  white-space: nowrap;
+  flex: none;
+  transition: background .15s var(--ease), border-color .15s var(--ease),
+    color .15s var(--ease);
+}
+.back-link:hover {
+  background: var(--raised);
+  border-color: var(--raised-hi);
+  color: var(--ink);
+}
+.back-link svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform .15s var(--ease);
+}
+.back-link:hover svg { transform: translateX(-2px); }
+
+.brand { display: flex; align-items: center; gap: .6rem; }
+
+/*
+ * Peg bar: the three-hole strip every cel was punched with and registered on.
+ * It is the oldest possible statement of what this tool does.
+ */
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 5px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  flex: none;
+}
+.mark i {
+  display: block;
+  width: 4px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--peg);
+  opacity: .85;
+}
+.mark i:nth-child(2) { width: 8px; }
+
+.brand h1 {
+  font-family: var(--mono);
+  font-size: .76rem;
+  font-weight: 400;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin: 0;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.canvas-size {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-left: auto;
+}
+
+.canvas-size label {
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: .35rem;
+}
+
+.canvas-size input { width: 66px; text-align: center; }
+.times, .unit { color: var(--ink-faint); font-size: .75rem; }
+.unit { font-family: var(--mono); }
+
+.topbar-actions { display: flex; gap: .6rem; align-items: center; }
+
+/* Undo/redo read as one two-position control, not two loose buttons. */
+.history-group {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.history-group button {
+  border: 0;
+  border-radius: 0;
+  padding: .38rem .5rem;
+}
+.history-group button + button { border-left: 1px solid var(--rule); }
+
+button.icon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+button.icon svg { width: 15px; height: 15px; display: block; }
+
+kbd {
+  font-family: var(--mono);
+  font-size: .93em;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: .05em .35em;
+  color: var(--ink-soft);
+  background: var(--table-deep);
+}
+
+/* ═══ form controls ════════════════════════════════════════════════════ */
+
+input[type="number"], select {
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .34rem .5rem;
+  min-width: 0;
+  transition: border-color .15s var(--ease), background .15s var(--ease);
+}
+
+input[type="number"]:hover, select:hover { border-color: var(--raised-hi); }
+input[type="number"]:focus, select:focus {
+  border-color: var(--glow);
+  outline: none;
+  background: #0e0d0c;
+}
+
+select { width: 100%; cursor: pointer; font-size: .78rem; }
+
+button {
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .42rem .8rem;
+  cursor: pointer;
+  font-size: .78rem;
+  transition: background .15s var(--ease), border-color .15s var(--ease),
+    color .15s var(--ease);
+}
+
+button:hover:not(:disabled) { background: var(--raised-hi); border-color: #3b3431; }
+button:active:not(:disabled) { background: var(--raised); }
+button:disabled { opacity: .35; cursor: not-allowed; }
+
+button.primary {
+  background: var(--glow);
+  border-color: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 500;
+  letter-spacing: .01em;
+}
+button.primary:hover:not(:disabled) {
+  background: #86e5db;
+  border-color: #86e5db;
+  box-shadow: 0 0 18px -4px var(--glow-dim);
+}
+
+button.ghost { background: transparent; }
+button.ghost:hover:not(:disabled) { background: var(--raised); }
+button.ghost[aria-pressed="true"] {
+  background: var(--glow-dim);
+  border-color: rgba(111, 216, 206, .45);
+  color: var(--glow);
+}
+
+button.wide { width: 100%; }
+
+/* Sliders read as a machined track with a lit thumb. */
+input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: .35rem 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--rule);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 4px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--glow);
+  margin-top: -6px;
+  box-shadow: 0 0 10px -2px var(--glow);
+  transition: height .15s var(--ease);
+}
+input[type="range"]:hover::-webkit-slider-thumb { height: 18px; margin-top: -8px; }
+input[type="range"]::-moz-range-track { height: 2px; background: var(--rule); }
+input[type="range"]::-moz-range-thumb {
+  width: 4px; height: 14px; border: 0; border-radius: 1px;
+  background: var(--glow); box-shadow: 0 0 10px -2px var(--glow);
+}
+
+/* ═══ workspace ════════════════════════════════════════════════════════ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  height: calc(100vh - var(--topbar-h));
+}
+
+.stage {
+  background: var(--table-deep);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/*
+ * The plate of light. A cel on a light table is lit from beneath, so the glow
+ * sits behind the artwork and falls off into the bench — the one gesture that
+ * makes this room a light table instead of a dark panel.
+ */
+.stage-inner {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  overflow: auto;
+  min-height: 0;
+  position: relative;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 46%, rgba(180, 205, 215, .07), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 50% 46%, rgba(200, 220, 228, .05), transparent 70%);
+}
+
+.canvas-wrap {
+  position: relative;
+  line-height: 0;
+}
+
+/*
+ * The bleed preview sits behind the plate and is allowed to spill onto the
+ * bench. Absolutely positioned so it never affects layout — the canvas stays
+ * exactly where it was — and non-interactive, since it is a preview of what
+ * export will cut away, not something you can grab.
+ */
+.canvas-wrap #overflowCanvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  /*
+   * Fade toward the outer edge. Without it the preview stops at a hard
+   * rectangle, and that straight cut reads as a rendering bug rather than as
+   * "this is as far as the preview reaches". The solid middle is hidden
+   * behind the real canvas, so what remains visible is a band that dissolves
+   * as it gets further from the frame.
+   */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  mask-composite: intersect;
+}
+
+.canvas-stack {
+  position: relative;
+  z-index: 1;
+  line-height: 0;
+  background-color: #191716;
+  /* Transparency checkerboard, kept low-contrast so it never reads as artwork. */
+  background-image:
+    linear-gradient(45deg, #211e1c 25%, transparent 25%, transparent 75%, #211e1c 75%),
+    linear-gradient(45deg, #211e1c 25%, transparent 25%, transparent 75%, #211e1c 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  /*
+   * A brighter rim than the rest of the bench. Now that artwork is painted
+   * outside the frame as well, this hairline is the only thing separating
+   * "will be exported" from "will be cut away" — the old near-invisible border
+   * left the boundary ambiguous.
+   */
+  box-shadow:
+    0 0 0 1px rgba(235, 230, 223, .38),
+    0 0 60px -12px rgba(160, 200, 210, .18),
+    0 18px 50px -20px rgba(0, 0, 0, .9);
+}
+
+/*
+ * Registration marks at the corners of the plate — the crosshairs a camera
+ * operator lined the field guide up against.
+ */
+.canvas-stack::before,
+.canvas-stack::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--peg);
+  opacity: .5;
+  pointer-events: none;
+}
+.canvas-stack::before {
+  top: -14px; left: -14px;
+  border-right: 0; border-bottom: 0;
+}
+.canvas-stack::after {
+  bottom: -14px; right: -14px;
+  border-left: 0; border-top: 0;
+}
+
+.canvas-stack canvas { display: block; }
+
+/*
+ * The overlay spans the bleed, not just the plate, so selection edges and
+ * resize grips can follow a layer past the frame instead of being cropped at
+ * it. It also takes the pointer events for the whole area — a grip sitting
+ * outside the canvas has to be grabbable where it is drawn.
+ */
+.canvas-wrap #overlayCanvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.canvas-wrap #overlayCanvas.grabbable { cursor: grab; }
+.canvas-wrap #overlayCanvas.dragging { cursor: grabbing; }
+
+/*
+ * Sits on its own plate rather than floating loose over the canvas: the guide
+ * box and centre cross occupy the same space, and unbacked text across a
+ * dashed rule is unreadable. `text-wrap: balance` keeps the Chinese line from
+ * breaking mid-term.
+ */
+.stage-hint {
+  position: absolute;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: .8rem;
+  line-height: 1.9;
+  pointer-events: none;
+  margin: 0;
+  max-width: 38ch;
+  text-wrap: balance;
+  padding: 1.15rem 1.5rem;
+  background: rgba(11, 10, 9, .86);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: 0 8px 30px -14px rgba(0, 0, 0, .9);
+}
+.stage-hint .dim {
+  display: inline-block;
+  margin-top: .55rem;
+  font-family: var(--mono);
+  font-size: .66rem;
+  letter-spacing: .05em;
+  line-height: 1.9;
+  color: var(--ink-faint);
+}
+
+/* Instrument readout along the bottom edge. */
+.stage-status {
+  border-top: 1px solid var(--rule);
+  padding: .45rem .9rem;
+  font-size: .68rem;
+  letter-spacing: .03em;
+  color: var(--ink-faint);
+  min-height: 28px;
+  background: var(--panel);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stage-status::-webkit-scrollbar { display: none; }
+
+/* ═══ panel ════════════════════════════════════════════════════════════ */
+
+.panel {
+  background: var(--panel);
+  border-left: 1px solid var(--rule);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--raised-hi) transparent;
+}
+.panel::-webkit-scrollbar { width: 9px; }
+.panel::-webkit-scrollbar-thumb {
+  background: var(--raised);
+  border: 3px solid var(--panel);
+  border-radius: 5px;
+}
+
+.block {
+  padding: 1rem 1.05rem 1.15rem;
+  border-bottom: 1px solid var(--rule-soft);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.block h2 {
+  font-family: var(--mono);
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.count {
+  background: var(--raised);
+  border-radius: 2px;
+  padding: .05rem .38rem;
+  font-size: .64rem;
+  color: var(--ink-soft);
+}
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+
+.field > label, .field-head label {
+  font-size: .75rem;
+  color: var(--ink-soft);
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.numeric { display: flex; align-items: center; gap: .25rem; }
+.numeric input { width: 76px; text-align: right; }
+.numeric-plain { font-size: .76rem; color: var(--ink); }
+
+/*
+ * min-width:0 on both the track and the input: a grid item's default
+ * min-width:auto refuses to shrink below the input's intrinsic size, which
+ * pushes the second column straight out past the panel edge.
+ */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.row2 > div { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.row2 label { font-size: .72rem; color: var(--ink-soft); }
+.row2 input { text-align: right; width: 100%; min-width: 0; }
+
+/* Rendered-size readout: the number you actually align against. */
+.readout {
+  font-size: .68rem;
+  color: var(--ink-faint);
+  margin: .15rem 0 0;
+  letter-spacing: .02em;
+  line-height: 1.7;
+}
+.readout b {
+  color: var(--peg);
+  font-weight: 400;
+}
+
+.button-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.button-row button { padding: .42rem .25rem; font-size: .74rem; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .77rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.check:hover { color: var(--ink); }
+.check input { accent-color: var(--glow); cursor: pointer; margin: 0; }
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px;
+}
+.segmented button {
+  border: 0;
+  background: transparent;
+  padding: .32rem;
+  font-size: .75rem;
+  border-radius: 2px;
+  color: var(--ink-soft);
+}
+.segmented button:hover { background: var(--raised); }
+.segmented button.active { background: var(--raised-hi); color: var(--ink); }
+
+.hint {
+  font-size: .71rem;
+  color: var(--ink-faint);
+  line-height: 1.75;
+  margin: 0;
+}
+.hint strong { color: var(--ink-soft); font-weight: 500; }
+
+.empty-note {
+  font-size: .73rem;
+  color: var(--ink-faint);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ═══ layers — an exposure sheet ═══════════════════════════════════════ */
+
+.layer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layer {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: .55rem;
+  padding: .35rem .45rem;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  background: var(--table-deep);
+  transition: background .13s var(--ease), border-color .13s var(--ease);
+}
+.layer:hover { background: var(--raised); }
+.layer.selected {
+  background: var(--glow-dim);
+  border-left-color: var(--glow);
+}
+
+.layer-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  background: #100e0d;
+  border-radius: 2px;
+  display: block;
+}
+
+.layer-name {
+  font-size: .75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-scale { font-size: .68rem; color: var(--ink-faint); }
+.layer.selected .layer-scale { color: var(--glow); }
+
+.layer-actions { display: flex; gap: 1px; }
+.layer-actions button {
+  background: transparent;
+  border: 0;
+  padding: .3rem;
+  color: var(--ink-faint);
+  border-radius: 2px;
+  line-height: 0;
+  display: grid;
+  place-items: center;
+}
+.layer-actions button:hover { background: var(--raised-hi); color: var(--ink); }
+.layer-actions button.off { opacity: .4; }
+.layer-actions button.remove:hover { color: var(--alert); background: rgba(224, 103, 79, .12); }
+.layer-actions svg { width: 13px; height: 13px; display: block; }
+
+/* ═══ export ═══════════════════════════════════════════════════════════ */
+
+.progress { display: flex; flex-direction: column; gap: .35rem; }
+
+.progress-bar {
+  height: 2px;
+  background: var(--table-deep);
+  overflow: hidden;
+}
+.progress-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--glow);
+  box-shadow: 0 0 8px var(--glow);
+  transition: width .2s var(--ease);
+}
+
+.progress-label {
+  font-size: .68rem;
+  color: var(--ink-faint);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-log {
+  background: var(--table-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .55rem .65rem;
+  font-size: .67rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  max-height: 200px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.export-log .row { display: flex; justify-content: space-between; gap: .6rem; }
+.export-log .row span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.export-log .saved { color: var(--glow); }
+.export-log .total {
+  border-top: 1px solid var(--rule);
+  margin-top: .4rem;
+  padding-top: .4rem;
+  color: var(--ink);
+}
+
+/* ═══ drop veil ════════════════════════════════════════════════════════ */
+
+.drop-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 10, 9, .9);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: veil-in .16s var(--ease);
+}
+.drop-veil::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px dashed var(--glow);
+  border-radius: 4px;
+  opacity: .5;
+}
+.drop-veil p {
+  font-family: var(--mono);
+  font-size: .8rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--glow);
+  margin: 0;
+}
+
+@keyframes veil-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ═══ responsive ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .workspace { grid-template-columns: 1fr; height: auto; }
+  .panel { border-left: 0; border-top: 1px solid var(--rule); }
+  .stage { min-height: 56vh; }
+  .topbar { flex-wrap: wrap; height: auto; padding: .65rem 1rem; gap: .8rem; }
+  .canvas-size { margin-left: 0; }
+  .back-link span { display: none; }
+  .back-link { padding: .34rem .45rem; }
+  /* Comfortable touch targets once this is being poked at rather than clicked. */
+  .layer { padding: .5rem; }
+  .layer-actions button { padding: .55rem; }
+  button { padding: .55rem .9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

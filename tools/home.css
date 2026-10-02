@@ -1,0 +1,483 @@
+/*
+ * Game Studio — the tool wall
+ * ===========================================================================
+ *
+ * Continues the room aligner/ established. That tool is an animator's light
+ * table; this is the wall of the same workshop — a punched steel pegboard with
+ * tools hung on it.
+ *
+ * The metaphor earns its place by doing a job words would otherwise have to
+ * do: empty holes are what a growing collection looks like. Saying "more
+ * tools coming" is a promise; an empty slot is a fact, and it reads instantly.
+ *
+ * Palette, type and signal colours are inherited from aligner verbatim, so
+ * moving between the homepage and a tool feels like walking across one room
+ * rather than between two products. Cyan is interactive, amber is fixture —
+ * never the reverse.
+ */
+
+:root {
+  /* Bench — warm blacks, anodised metal under low light. */
+  --wall-deep: #0b0a09;
+  --wall: #131110;
+  --panel: #1a1817;
+  --raised: #241f1d;
+  --raised-hi: #2f2926;
+  --rule: #2e2926;
+  --rule-soft: #221e1c;
+
+  --ink: #ebe6df;
+  --ink-soft: #9d958a;
+  /*
+   * Verified at 4.98:1 on the wall and 4.68:1 on a panel — above the 4.5:1 AA
+   * floor for body text. The obvious darker grey for "quiet" text came in at
+   * 3.23:1, which fails, and these are the smallest type on the page.
+   */
+  --ink-faint: #8a8279;
+
+  --glow: #6fd8ce;          /* cold light: interactive */
+  --glow-dim: rgba(111, 216, 206, .13);
+  --peg: #e8a33d;           /* amber: fixtures, holes, hardware */
+
+  --mono: 'Chivo Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Segoe UI', sans-serif;
+
+  --ease: cubic-bezier(.32, .72, 0, 1);
+  --hole: rgba(0, 0, 0, .55);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--wall);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  /*
+   * The pegboard itself. A punched sheet lit from the upper left, so the
+   * perforation fades as it falls away — a flat repeat would read as
+   * wallpaper rather than as a surface with a light on it.
+   */
+  background-image:
+    radial-gradient(circle at 50% 50%, var(--hole) 1.4px, transparent 1.6px),
+    radial-gradient(ellipse 70% 50% at 30% 0%, rgba(150, 190, 200, .05), transparent 60%);
+  background-size: 30px 30px, 100% 100%;
+  background-position: 0 0, 0 0;
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--glow);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+::selection { background: var(--glow-dim); color: var(--ink); }
+
+code {
+  font-family: var(--mono);
+  white-space: nowrap;
+  font-size: .88em;
+  background: var(--wall-deep);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: .08em .4em;
+  color: var(--ink-soft);
+}
+
+/* A machined rail across the very top — the edge of the board. */
+.rail {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--rule) 12%, var(--raised-hi) 50%, var(--rule) 88%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* ═══ masthead ═════════════════════════════════════════════════════════ */
+
+.masthead {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(3.5rem, 9vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(2.5rem, 6vw, 4rem);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  animation: settle .6s var(--ease) both;
+}
+
+/* The peg bar every cel is punched with — carried over from aligner. */
+.peg-mark {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 7px;
+  background: var(--wall-deep);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  flex: none;
+}
+.peg-mark i {
+  display: block;
+  width: 5px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--peg);
+  opacity: .85;
+}
+.peg-mark i:nth-child(2) { width: 10px; }
+
+.brand h1 {
+  font-family: var(--mono);
+  font-size: clamp(1.05rem, 2.6vw, 1.4rem);
+  font-weight: 400;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/*
+ * Widths are in `em`, not `ch`.
+ *
+ * Chinese has no word boundaries, so the browser will break between any two
+ * characters and `text-wrap: balance` has nothing to balance on. One CJK glyph
+ * is one em, so an em width is a direct count of characters per line — the
+ * only way to steer a break onto the comma instead of through a word.
+ */
+.tagline {
+  font-size: clamp(1.35rem, 4vw, 2.2rem);
+  line-height: 1.4;
+  letter-spacing: -.01em;
+  max-width: 15em;
+  margin: clamp(1.5rem, 4vw, 2.4rem) 0 0;
+  animation: settle .6s var(--ease) 80ms both;
+}
+
+.creed {
+  color: var(--ink-soft);
+  max-width: 27em;
+  margin: 1.15rem 0 0;
+  font-size: .96rem;
+  animation: settle .6s var(--ease) 160ms both;
+}
+.creed strong { color: var(--ink); font-weight: 500; }
+
+/* ═══ board ════════════════════════════════════════════════════════════ */
+
+.board {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem) clamp(4rem, 10vw, 7rem);
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: .68rem;
+  font-weight: 400;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 1.5rem;
+  animation: settle .6s var(--ease) 220ms both;
+}
+.section-label .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.section-label .count { white-space: nowrap; }
+.section-label .count b { color: var(--glow); font-weight: 400; }
+
+.rack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* Three across on a full-width desk: the tool plus room beside it. */
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+  gap: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.tool {
+  /* Each tool drops onto its hooks in turn. */
+  animation: hang .55s var(--ease) both;
+  animation-delay: calc(280ms + var(--delay, 0ms));
+}
+
+/*
+ * Hooks. Two pins through the board, and the card hangs off them — the reason
+ * every card has a little headroom at the top and a shadow beneath it.
+ */
+.hooks {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 34px;
+  pointer-events: none;
+}
+.hooks i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wall-deep);
+  border: 1px solid var(--raised-hi);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .8), 0 1px 0 rgba(235, 230, 223, .06);
+}
+
+.tool-card {
+  position: relative;
+  /* Grid stretches the li, not the card inside it. */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  min-height: 236px;
+  padding: 1.5rem 1.35rem 1.3rem;
+  background: linear-gradient(160deg, var(--panel), #171514);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 10px 26px -18px rgba(0, 0, 0, .95);
+  transition: transform .22s var(--ease), border-color .22s var(--ease),
+    box-shadow .22s var(--ease);
+}
+
+a.tool-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(111, 216, 206, .42);
+  box-shadow:
+    0 18px 34px -20px rgba(0, 0, 0, 1),
+    0 0 0 1px var(--glow-dim);
+}
+a.tool-card:active { transform: translateY(-1px); }
+
+.tool-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.tool-name {
+  font-family: var(--mono);
+  font-size: 1.02rem;
+  letter-spacing: -.01em;
+}
+
+.tool-zh {
+  font-size: .8rem;
+  color: var(--ink-faint);
+  letter-spacing: .06em;
+  margin-top: -.35rem;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  padding: .16em .5em;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex: none;
+}
+.chip--ready {
+  background: var(--glow-dim);
+  color: var(--glow);
+  border: 1px solid rgba(111, 216, 206, .3);
+}
+
+.tool-desc {
+  font-size: .86rem;
+  color: var(--ink-soft);
+  line-height: 1.75;
+  margin-top: .35rem;
+  max-width: 22em;
+}
+
+.tool-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: auto;
+  padding-top: .9rem;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .08em;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: .16em .45em;
+}
+
+.tool-go {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-family: var(--mono);
+  font-size: .74rem;
+  letter-spacing: .08em;
+  color: var(--glow);
+  margin-top: .9rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--rule-soft);
+}
+.tool-go svg {
+  width: 14px;
+  height: 14px;
+  transition: transform .22s var(--ease);
+}
+a.tool-card:hover .tool-go svg { transform: translateX(3px); }
+
+/*
+ * An empty slot is the point, not filler. It states that the wall has room
+ * without inventing tools that do not exist yet.
+ */
+.tool-card--empty {
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--rule);
+  box-shadow: none;
+}
+.tool--empty .hooks i { opacity: .45; }
+
+.empty-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--rule);
+  border-radius: 50%;
+  color: var(--ink-faint);
+  opacity: .55;
+}
+.empty-mark svg { width: 17px; height: 17px; }
+
+.empty-note {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  opacity: .7;
+}
+
+/* ═══ footer ═══════════════════════════════════════════════════════════ */
+
+.footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 7vw, 5rem);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.footer h3 {
+  font-family: var(--mono);
+  font-size: .68rem;
+  font-weight: 400;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--peg);
+  margin: 0 0 .7rem;
+}
+
+.footer p {
+  margin: 0;
+  font-size: .88rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+  max-width: 24em;
+  /* Keep CJK punctuation off the start of a line. */
+  line-break: strict;
+}
+
+/*
+ * Selector weight matters here: `.footer p { margin: 0 }` is (0,1,1) and would
+ * otherwise beat a bare `.colophon` at (0,1,0), silently eating this margin and
+ * letting the colophon collide with the last paragraph of the first column.
+ */
+.footer > .colophon {
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  color: var(--ink-faint);
+  margin: clamp(2.5rem, 6vw, 4rem) 0 0;
+  padding-top: clamp(1.5rem, 3vw, 2rem);
+  border-top: 1px solid var(--rule-soft);
+  max-width: none;
+  /*
+   * Laid out as items rather than one string: on a narrow screen a plain line
+   * wraps mid-word, and Chinese has no word boundary to stop it. Flex can only
+   * break between items, so the separators become the only legal break points.
+   */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem 0;
+}
+
+.footer > .colophon span + span::before {
+  content: '·';
+  margin: 0 .75em;
+  color: var(--rule);
+}
+
+/* ═══ motion ═══════════════════════════════════════════════════════════ */
+
+@keyframes settle {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Cards fall onto their hooks and stop — no bounce, this is metal. */
+@keyframes hang {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ═══ responsive ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  body { font-size: 14px; background-size: 26px 26px, 100% 100%; }
+  .rack { grid-template-columns: 1fr; }
+  .tool-card { min-height: 0; }
+  .tool-card--empty { min-height: 132px; }
+  .section-label { gap: .7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Canvas Aligner — 主体大小对齐工具</title>
+<link rel="stylesheet" href="fonts.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back-link" href="../index.html" title="返回工具板">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M13 8H3.5M7 4.5 3.5 8 7 11.5" />
+    </svg>
+    <span>工具板</span>
+  </a>
+
+  <div class="brand">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <h1>Canvas Aligner</h1>
+  </div>
+
+  <div class="canvas-size">
+    <label for="canvasW">画布</label>
+    <input type="number" id="canvasW" value="512" min="16" max="8192" step="1" aria-label="画布宽度" />
+    <span class="times" aria-hidden="true">&times;</span>
+    <input type="number" id="canvasH" value="512" min="16" max="8192" step="1" aria-label="画布高度" />
+    <span class="unit">px</span>
+    <button type="button" id="squareLock" class="ghost" aria-pressed="true" title="锁定为正方形">1:1</button>
+  </div>
+
+  <div class="topbar-actions">
+    <div class="history-group">
+      <button type="button" id="undoBtn" class="ghost icon" title="撤销 (⌘Z)" aria-label="撤销" disabled>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 3.5 2.5 7 6 10.5" /><path d="M2.5 7h6.75A4.25 4.25 0 0 1 13.5 11.25v1.25" />
+        </svg>
+      </button>
+      <button type="button" id="redoBtn" class="ghost icon" title="重做 (⇧⌘Z)" aria-label="重做" disabled>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 3.5 13.5 7 10 10.5" /><path d="M13.5 7H6.75A4.25 4.25 0 0 0 2.5 11.25v1.25" />
+        </svg>
+      </button>
+    </div>
+    <button type="button" id="importBtn" class="primary">导入图片</button>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden />
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="stage" id="stage" aria-label="画布">
+    <div class="stage-inner">
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="overflowCanvas" aria-hidden="true"></canvas>
+        <div class="canvas-stack" id="canvasStack">
+          <canvas id="artworkCanvas"></canvas>
+        </div>
+        <canvas id="overlayCanvas"></canvas>
+      </div>
+      <p class="stage-hint" id="stageHint">
+        把图片拖到这里，或按 <kbd>⌘V</kbd> 粘贴，也可以点右上角「导入图片」。
+        <span class="dim">
+          在右侧图层列表里选图层，然后在画布上调整<br />
+          拖拽移动 &middot; 拖四角缩放 &middot; 滚轮缩放<br />
+          方向键微调 &middot; Shift 加速 &middot; <kbd>⌘Z</kbd> 撤销
+        </span>
+      </p>
+    </div>
+    <div class="stage-status" id="stageStatus" role="status"></div>
+  </section>
+
+  <aside class="panel">
+
+    <section class="block">
+      <h2>图层 <span class="count" id="layerCount">0</span></h2>
+      <ul class="layer-list" id="layerList"></ul>
+      <p class="empty-note" id="layerEmpty">还没有图片。导入后每张图会叠在同一个画布上。</p>
+      <p class="hint" id="layerHint" hidden>点这里选要调整的图层 &mdash; 画布上只负责调整，不负责选择。</p>
+    </section>
+
+    <section class="block" id="transformBlock" hidden>
+      <h2>选中图层</h2>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="scaleInput">缩放</label>
+          <div class="numeric">
+            <input type="number" id="scaleInput" step="0.1" min="1" max="2000" />
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <input type="range" id="scaleSlider" min="1" max="400" step="0.1" />
+        <p class="readout" id="renderedSize">&mdash;</p>
+      </div>
+
+      <div class="field row2">
+        <div>
+          <label for="posX">水平偏移</label>
+          <input type="number" id="posX" step="1" />
+        </div>
+        <div>
+          <label for="posY">垂直偏移</label>
+          <input type="number" id="posY" step="1" />
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button type="button" id="centerBtn" class="ghost">居中</button>
+        <button type="button" id="fitBtn" class="ghost">适配画布</button>
+        <button type="button" id="resetBtn" class="ghost">重置</button>
+      </div>
+      <button type="button" id="matchBtn" class="ghost wide">把这个缩放应用到全部图层</button>
+    </section>
+
+    <section class="block">
+      <h2>叠加对比</h2>
+      <div class="field">
+        <label for="blendSelect">叠加方式</label>
+        <select id="blendSelect">
+          <option value="multiply">正片叠底 &mdash; 白底/浅底素材</option>
+          <option value="screen">滤色 &mdash; 黑底/深底素材</option>
+          <option value="normal">正常 &mdash; 透明 PNG</option>
+        </select>
+        <p class="hint" id="blendHint">
+          纯色背景的图直接叠在一起，上面那张会把下面完全盖住。正片叠底让白底「消失」，
+          几张图的主体才能同时看见 &mdash; 导入时已按素材底色自动选好。
+        </p>
+      </div>
+      <div class="field">
+        <div class="field-head">
+          <label for="onionSlider">未选中图层不透明度</label>
+          <span class="numeric-plain" id="onionValue">55%</span>
+        </div>
+        <input type="range" id="onionSlider" min="0" max="100" step="5" value="55" />
+      </div>
+      <label class="check">
+        <input type="checkbox" id="soloToggle" />
+        <span>只显示选中图层</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="snapToggle" checked />
+        <span>移动时吸附对齐</span>
+      </label>
+      <p class="hint">
+        拖动靠近画布中心、参考框边缘或其他图层时会「咔」一下吸上去，并显示对齐线。
+        临时不想吸附就按住 <kbd>Option</kbd> 拖。
+      </p>
+    </section>
+
+    <section class="block">
+      <h2>参考框</h2>
+      <label class="check">
+        <input type="checkbox" id="guideToggle" checked />
+        <span>显示参考框</span>
+      </label>
+      <div class="field">
+        <div class="field-head">
+          <label for="guidePercent">占画布</label>
+          <span class="numeric-plain" id="guideValue">70%</span>
+        </div>
+        <input type="range" id="guidePercent" min="10" max="100" step="1" value="70" />
+      </div>
+      <div class="segmented" role="radiogroup" aria-label="参考框形状">
+        <button type="button" data-shape="box" class="active" role="radio" aria-checked="true">方框</button>
+        <button type="button" data-shape="circle" role="radio" aria-checked="false">圆形</button>
+      </div>
+      <p class="hint">把每张图的主体都调到贴合这个框，n 张图的主体比例就一致了。</p>
+    </section>
+
+    <section class="block">
+      <h2>导出</h2>
+      <div class="field">
+        <label for="formatSelect">格式</label>
+        <select id="formatSelect">
+          <option value="image/png" selected>PNG &mdash; 减色调色板，兼容性最好</option>
+          <option value="image/webp">WebP &mdash; 体积最小，支持透明</option>
+          <option value="image/jpeg">JPEG &mdash; 兼容性最好，无透明</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ssimSelect">压到刚好看不出差别</label>
+        <select id="ssimSelect">
+          <option value="0.995">最严 &mdash; 相似度 99.5%</option>
+          <option value="0.99">推荐 &mdash; 相似度 99%</option>
+          <option value="0.98">激进 &mdash; 相似度 98%</option>
+          <option value="0.95" selected>最小体积 &mdash; 相似度 95%</option>
+        </select>
+        <p class="hint">
+          逐档降质量重新编码，每档都和原图逐像素比对结构相似度，压到再降就要露出痕迹为止，
+          然后退回上一档。<strong>停止条件是画质不是体积</strong> ——
+          体积曲线一路到底都在降，没有拐点可停。
+        </p>
+        <p class="hint">
+          只要还压得动就继续压：一档<strong>省下不足 1 KB 且不足 0.5%</strong> 时才收手。
+          两个条件都要满足，小图才不会在第一档就被 1 KB 的门槛拦下。
+        </p>
+        <p class="hint">
+          PNG 走的是同一套搜索，只是旋钮换成<strong>调色板大小</strong> ——
+          画布给出的永远是 32 位真彩，而这里导出的素材通常只有几十种颜色。
+        </p>
+      </div>
+      <button type="button" id="exportBtn" class="primary wide" disabled>导出 ZIP</button>
+      <div class="progress" id="progress" hidden>
+        <div class="progress-bar"><span id="progressFill"></span></div>
+        <p class="progress-label" id="progressLabel"></p>
+      </div>
+      <div class="export-log" id="exportLog" hidden></div>
+    </section>
+
+  </aside>
+</main>
+
+<div class="drop-veil" id="dropVeil" hidden><p>松手导入</p></div>
+
+<script src="js/zip.js"></script>
+<script src="js/ssim.js"></script>
+<script src="js/quantize.js"></script>
+<script src="js/png.js"></script>
+<script src="js/compress.js"></script>
+<script src="js/state.js"></script>
+<script src="js/snap.js"></script>
+<script src="js/render.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/interact.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

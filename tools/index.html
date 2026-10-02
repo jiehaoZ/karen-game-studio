@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game Studio — 本地素材工具台</title>
+<link rel="stylesheet" href="aligner/fonts.css" />
+<link rel="stylesheet" href="home.css" />
+</head>
+<body>
+
+<div class="rail" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="brand">
+    <span class="peg-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <h1>Game Studio</h1>
+  </div>
+  <p class="tagline">
+    做游戏素材时反复要用的小工具，一件一件挂在这块板上。
+  </p>
+  <p class="creed">
+    每一件都在你自己的浏览器里跑完：<strong>不上传、不联网、不需要装环境</strong>。
+    双击就能用，关掉就没了。
+  </p>
+</header>
+
+<main class="board" aria-label="工具板">
+  <h2 class="section-label">
+    <span>工具</span>
+    <span class="rule" aria-hidden="true"></span>
+    <span class="count"><b id="readyCount">2</b> 件可用</span>
+  </h2>
+
+  <ul class="rack">
+
+    <li class="tool" style="--delay: 0ms">
+      <a class="tool-card" href="aligner/index.html">
+        <span class="hooks" aria-hidden="true"><i></i><i></i></span>
+
+        <span class="tool-head">
+          <span class="tool-name">Canvas Aligner</span>
+          <span class="chip chip--ready">可用</span>
+        </span>
+        <span class="tool-zh">画布对齐</span>
+
+        <span class="tool-desc">
+          n 张图叠在同一个画布上，手动缩放到主体大小一致，一键导出 ZIP。
+          对着参考框调，肉眼确认。
+        </span>
+
+        <span class="tool-meta">
+          <span class="tag">图像</span>
+          <span class="tag">批量导出</span>
+          <span class="tag">离线</span>
+        </span>
+
+        <span class="tool-go">
+          打开
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" />
+          </svg>
+        </span>
+      </a>
+    </li>
+
+    <li class="tool" style="--delay: 70ms">
+      <a class="tool-card" href="matte/index.html">
+        <span class="hooks" aria-hidden="true"><i></i><i></i></span>
+
+        <span class="tool-head">
+          <span class="tool-name">Matte</span>
+          <span class="chip chip--ready">可用</span>
+        </span>
+        <span class="tool-zh">纯色背景抠图</span>
+
+        <span class="tool-desc">
+          黑底、白底、绿幕一键转透明。用成像方程反解，头发和柔边不会被切平。
+          复杂背景可选装 AI 模型。
+        </span>
+
+        <span class="tool-meta">
+          <span class="tag">图像</span>
+          <span class="tag">透明通道</span>
+          <span class="tag">离线</span>
+        </span>
+
+        <span class="tool-go">
+          打开
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" />
+          </svg>
+        </span>
+      </a>
+    </li>
+
+    <li class="tool tool--empty" style="--delay: 140ms">
+      <div class="tool-card tool-card--empty">
+        <span class="hooks" aria-hidden="true"><i></i><i></i></span>
+        <span class="empty-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M12 6v12M6 12h12" />
+          </svg>
+        </span>
+        <span class="empty-note">空位</span>
+      </div>
+    </li>
+
+  </ul>
+</main>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <section>
+      <h3>为什么都在本地跑</h3>
+      <p>
+        素材是没发布的东西。传到别人服务器上处理，就等于发布了一次。
+        这里的工具全部在浏览器内完成计算，文件从头到尾没离开过这台机器。
+      </p>
+    </section>
+    <section>
+      <h3>怎么加新工具</h3>
+      <p>
+        每个工具是一个独立目录，自带 <code>index.html</code>，双击即可运行，
+        彼此之间没有依赖。往板上挂一件，就是新建一个目录。
+      </p>
+    </section>
+  </div>
+  <p class="colophon">
+    <span>Game Studio</span>
+    <span>本地优先</span>
+    <span>无构建步骤</span>
+    <span>无外部请求</span>
+  </p>
+</footer>
+
+</body>
+</html>
