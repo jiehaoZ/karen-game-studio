@@ -44,7 +44,10 @@ preparing game assets.
 ## Changes
 
 - Update the root skill catalog when adding, renaming, or removing a skill.
-- Update the root tool catalog and `tools/README.md` when adding, renaming, or
-  removing a tool.
+- Update the root tool catalog and `tools/README.md` (both languages) when
+  adding, renaming, or removing a tool.
+- Keep every README in two languages: `README.md` in English (the default) and
+  `README.zh-CN.md` in Simplified Chinese, each with a language switcher under
+  the title. Update both in the same change.
 - Record user-visible behavior changes in `CHANGELOG.md`.
 - Preserve existing skill names unless a migration is intentionally planned.

@@ -1,5 +1,7 @@
 # Karen Game Studio
 
+**English** | [简体中文](./README.zh-CN.md)
+
 A game-development workshop in one repository: Agent Skills for coding agents,
 and local-first browser tools for preparing game assets.
 
@@ -65,10 +67,9 @@ Both tools compress exports until one more step would become visible, checking
 each step against the original with SSIM. PNG reduces the palette size; WebP and
 JPEG reduce quality.
 
-The tool documentation is written in Chinese: see
-[`tools/README.md`](./tools/README.md) for the board, the shared design
+See [`tools/README.md`](./tools/README.md) for the board, the shared design
 language, and how to add a tool, and each tool's own README for its design
-notes.
+notes. The tools' interface is in Chinese.
 
 ### Development
 
@@ -99,6 +100,11 @@ Its directory name must match the `name` field in its `SKILL.md`, and its
 scripts, references, and static resources stay inside that directory.
 
 Every directory under `tools/` is a standalone tool with its own `index.html`.
+
+## Documentation languages
+
+Every README comes in English and Simplified Chinese: `README.md` is English
+and shown by default, `README.zh-CN.md` is Chinese.
 
 ## License
 

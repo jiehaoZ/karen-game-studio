@@ -1,48 +1,72 @@
-# Game Studio 工具板
+# Game Studio Tool Board
 
-做游戏素材时反复要用的小工具，一件一件挂在这块板上。
+**English** | [简体中文](./README.zh-CN.md)
 
-**双击本目录的 `index.html` 打开工具板。** 每一件工具都在浏览器里跑完：不上传、不联网、不需要装环境。
+Small tools that keep coming up when preparing game assets, hung on this board
+one at a time.
 
-图片可以拖进去、点选，或者直接 `⌘V` 粘贴 —— 截图不用先存盘。
+**Double-click `index.html` in this directory to open the board.** Every tool
+runs entirely in the browser: no upload, no network, no environment to install.
 
-## 工具
+Images can be dropped in, picked from a file dialog, or pasted with `⌘V`, so a
+screenshot never has to be saved first.
 
-| 工具 | 说明 | 状态 |
-|------|------|------|
-| [Canvas Aligner](aligner/) | n 张图叠在同一个画布上，手动缩放到主体大小一致，一键导出 ZIP | 可用 |
-| [Matte](matte/) | 纯色背景转透明。用成像方程反解，柔边和毛发不会被切平 | 可用 |
+The tools' interface is in Chinese.
 
-两件工具的导出都会**压到刚好看不出差别为止**：逐档压缩，每档和原图逐像素比对结构相似度，压到再降一档就要露出痕迹时退回上一档。PNG 降的是调色板大小（实测省 72–83%，和 tinypng.com 同一水平，但不上传），WebP/JPEG 降的是画质。这套搜索在 [`aligner/js/compress.js`](aligner/js/compress.js) 里，两边共用同一份拷贝 —— 判据和踩过的坑写在 [Aligner 的 README](aligner/README.md#png-也要搜索旋钮是调色板不是画质)。
+## Tools
 
-## 加一件新工具
+| Tool | Description | Status |
+|------|-------------|--------|
+| [Canvas Aligner](aligner/) | Stack n images on one canvas, scale each by hand until the subjects match in size, export a ZIP in one click | Ready |
+| [Matte](matte/) | Solid-color background to transparency. Solves the compositing equation, so soft edges and hair are not flattened | Ready |
 
-每个工具是一个独立目录，自带 `index.html`，双击即可运行，彼此之间没有依赖：
+Both tools compress their exports **until just before the difference becomes
+visible**: they step down one level at a time, compare each level against the
+original pixel by pixel with structural similarity, and back off one level when
+the next step would start to show. PNG reduces the palette size (measured
+savings of 72–83%, on par with tinypng.com but without uploading); WebP and JPEG
+reduce quality. The search lives in
+[`aligner/js/compress.js`](aligner/js/compress.js), and both tools carry the
+same copy. The criteria and the pitfalls are written up in the
+[Aligner README](aligner/README.md#png-needs-the-search-too-the-knob-is-palette-size-not-quality).
+
+## Adding a tool
+
+Each tool is a standalone directory with its own `index.html`. It runs on a
+double-click and depends on nothing else:
 
 ```
 tools/
-├── index.html      工具板（首页）
+├── index.html      tool board (home page)
 ├── home.css
-└── <工具名>/
-    ├── index.html  双击就能跑
+└── <tool-name>/
+    ├── index.html  runs on a double-click
     └── ...
 ```
 
-新建目录、写好 `index.html`，然后在 `tools/index.html` 的 `.rack` 里把一个 `<li class="tool tool--empty">` 换成工具卡片即可。板上留了一个空位。
+Create the directory, write its `index.html`, then replace a
+`<li class="tool tool--empty">` in the `.rack` of `tools/index.html` with a tool
+card. The board has one empty slot left.
 
-## 共用的设计语言
+## Shared design language
 
-工具板和 Canvas Aligner 共享一套视觉系统，改动时请保持一致：
+The board and Canvas Aligner share one visual system. Keep it consistent when
+changing either:
 
-| | 用途 |
+| | Used for |
 |---|---|
-| 暖石墨黑 `#131110` / `#1a1817` | 工作台底色，永远深色 |
-| 冷青 `#6fd8ce` | **只表示可交互 / 当前选中** |
-| 琥珀 `#e8a33d` | **只表示固定标记**（参考框、孔位、小节标题） |
-| 粉 `#f05e8e` | 仅用于吸附对齐线 |
-| `#8a8279` | 次要文字的最暗值 —— 再暗就低于 WCAG AA 4.5:1 |
-| Chivo Mono | 数字与技术标签；中文走系统字体栈 |
+| Warm graphite `#131110` / `#1a1817` | Workbench background, always dark |
+| Cool teal `#6fd8ce` | **Only for interactive or currently selected** |
+| Amber `#e8a33d` | **Only for fixed markers** (reference frame, peg holes, section labels) |
+| Pink `#f05e8e` | Snap guides only |
+| `#8a8279` | Darkest allowed secondary text. Any darker falls below WCAG AA 4.5:1 |
+| Chivo Mono | Numbers and technical labels; Chinese text uses the system font stack |
 
-字体内嵌在 [`aligner/fonts.css`](aligner/fonts.css)（latin subset，data URI），首页直接引用它，所以离线可用且不重复下载。
+The font is embedded in [`aligner/fonts.css`](aligner/fonts.css) (latin subset,
+data URI). The home page references that file directly, so it works offline and
+is not downloaded twice.
 
-概念上这是一间工作室：Canvas Aligner 是动画师的**透台**（洋葱皮就是从赛璐璐片叠在背光玻璃上对位来的），首页是挂工具的**孔板**。空孔位不是留白，它就是「这个集合会长大」本身。
+Conceptually this is a studio. Canvas Aligner is the animator's **light table**
+(onion skinning comes from stacking cels on backlit glass to register them), and
+the home page is the **pegboard** the tools hang on. An empty peg slot is not
+whitespace; it is the statement that this collection will grow.

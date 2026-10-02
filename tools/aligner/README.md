@@ -1,113 +1,200 @@
 # Canvas Aligner
 
-在同一个画布上叠放 n 张图，手动缩放到主体大小一致，一键导出 ZIP。
+**English** | [简体中文](./README.zh-CN.md)
 
-> Game Studio 工具板的一件工具。整个工具板在 [`../index.html`](../index.html)，
-> 页面左上角的「← 工具板」可以随时回去。这个目录也可以单独拷走用，
-> 只是那个返回链接会失效。
+Stack n images on one canvas, scale each by hand until the subjects match in
+size, and export a ZIP in one click.
 
-纯前端，零依赖，**双击 `index.html` 就能用**。不需要装环境、不需要起服务器、不联网。图片不会离开你的电脑。
+> One of the tools on the Game Studio board. The board is at
+> [`../index.html`](../index.html) ([about](../README.md)), and the "← 工具板"
+> link in the top-left corner of the page takes you back at any time. This
+> directory can also be copied out and used alone; only that back link stops
+> working.
+
+Pure front end, zero dependencies: **double-click `index.html` and it works**.
+No environment to install, no server to start, no network. Images never leave
+your computer.
+
+The interface is in Chinese. Control names below are given in English with the
+on-screen label in parentheses where it helps to find them.
 
 ```
-┌─────────────────────────┐
-│    ○ ← 太小              │   叠在同一画布上
-│  ╭───────╮              │   手动调到贴合参考框
-│  │  ●    │ ← 参考框 70%  │   ↓
-│  ╰───────╯              │   n 张图主体比例一致
-│  ⬤ ← 太大               │
-└─────────────────────────┘
+┌──────────────────────────────┐
+│    ○ ← too small             │   stacked on one canvas
+│  ╭───────╮                   │   scale each to fit the frame
+│  │  ●    │ ← reference 70%   │   ↓
+│  ╰───────╯                   │   n images, same subject size
+│  ⬤ ← too large               │
+└──────────────────────────────┘
 ```
 
-## 怎么用
+## How to use it
 
-1. **设画布尺寸** — 右上角，默认 512×512，`1:1` 按钮锁定正方形
-2. **拖图片进来** — 或按 `⌘V` 粘贴（截图直接贴，不用先存盘），也可以点「导入图片」多选
-3. **在右侧图层列表选中要调的那张** — 画布只负责调整，不负责选择（见下）
-4. **在画布上调整**：
+1. **Set the canvas size.** Top right, 512×512 by default. The `1:1` button
+   locks it to a square.
+2. **Drag images in**, or press `⌘V` to paste (a screenshot can be pasted
+   without saving it first), or click "导入图片" (Import images) to pick several.
+3. **Select the image to adjust in the layer list on the right.** The canvas is
+   only for adjusting, not for selecting (see below).
+4. **Adjust on the canvas:**
 
-   | 操作 | 方式 |
-   |------|------|
-   | 缩放 | **拖四角手柄**、滚轮（以光标为锚点）、滑块、直接输数值 |
-   | 移动 | 画布上任意处拖拽 |
-   | 微调位置 | 方向键，Shift 加速到 10px |
-   | 微调缩放 | `[` `]` 键 |
-   | 删除选中图层 | `Backspace` 或 `Delete`（删错了 `⌘Z` 能撤回） |
-   | 撤销 / 重做 | `⌘Z` / `⇧⌘Z`（Windows 上是 `Ctrl`），或顶栏按钮 |
+   | Action | How |
+   |--------|-----|
+   | Scale | **Drag a corner handle**, scroll the wheel (anchored at the cursor), use the slider, or type a value |
+   | Move | Drag anywhere on the canvas |
+   | Nudge position | Arrow keys; Shift speeds it up to 10px |
+   | Nudge scale | `[` and `]` |
+   | Delete the selected layer | `Backspace` or `Delete` (`⌘Z` brings it back) |
+   | Undo / redo | `⌘Z` / `⇧⌘Z` (`Ctrl` on Windows), or the top bar buttons |
 
-   拖四角时**对角保持不动** —— 拖右下角，左上角钉在原地。这样调大小不会让图跑掉，比滚轮更好控制边界对齐。
+   While dragging a corner, **the opposite corner stays put**: drag the bottom
+   right and the top left is pinned. Resizing therefore never makes the image
+   drift, and edges are easier to line up than with the wheel.
 
-   拖的过程中**明暗关系会反转**：被拖的那张变半透明，其他张全部变实。因为这时候你是在拿它去对齐别人，参照物该清晰、被调的该让路 —— 否则图越拖越大，正好把你要对齐的东西盖住。松手就恢复。
+   While dragging, **the light/dark relationship inverts**: the image being
+   dragged turns translucent and all the others turn solid. At that moment you
+   are aligning it against the others, so the references should be clear and the
+   one being adjusted should get out of the way. Otherwise the image grows as
+   you drag and covers exactly what you are aligning to. It reverts on release.
 
-   **移动和拖角都会吸附对齐**：靠近画布中心、参考框边缘、或其他图层的边缘/中心时会「咔」一下吸上去，并画出粉色对齐线告诉你吸到了哪。按住 <kbd>Option</kbd> 临时关掉，或在面板里永久关掉。
+   **Both moving and corner-dragging snap.** Near the canvas center, the
+   reference frame edges, or another layer's edges or center, the image clicks
+   into place and a pink guide shows what it snapped to. Hold <kbd>Option</kbd>
+   to switch it off temporarily, or turn it off for good in the panel.
 
-   **画布外的部分一直显示**（半透明，越往外越淡），四角手柄也会跟着图走到画布外。否则你把图拖到比画布还大的时候，正在拖的那部分恰好就是看不见的那部分。
+   **The part outside the canvas is always shown** (translucent, fading
+   outward), and the corner handles follow the image out there. Otherwise, once
+   an image is larger than the canvas, the part you are dragging is exactly the
+   part you cannot see.
 
-5. **对着参考框调** — 打开参考框设成 70%，把每张图的主体都调到贴合它，n 张图的比例就一致了。方框/圆形可切换。
-6. **导出 ZIP** — 每张图各自导出成完整画布尺寸的独立文件
+5. **Adjust against the reference frame.** Turn the frame on at 70% and scale
+   each image's subject to fit it; the n images then share one proportion. The
+   frame can be a square or a circle.
+6. **Export the ZIP.** Each image is exported as its own file at the full canvas
+   size.
 
-## 八个不显然但重要的设计
+## Nine design decisions that are not obvious but matter
 
-### 选择只在图层列表，画布上点不选
+### Selection happens only in the layer list; clicking the canvas does not select
 
-在画布上点图片**不会**切换选中图层。听起来反直觉，但这里点击选择没法工作：几张图是刻意叠在一起的，往往几乎完全重合，一次点击没有任何站得住脚的答案说你指的是哪张。更糟的是，一张被拖到画布外的图会变得永远选不中。
+Clicking an image on the canvas does **not** change the selected layer. That
+sounds backwards, but click-to-select cannot work here: the images are stacked
+on purpose and often overlap almost completely, so a click has no defensible
+answer for which one you meant. Worse, an image dragged off the canvas could
+never be selected again.
 
-所以分工是：**图层列表决定调哪张，画布决定怎么调**。选中之后在画布上任意位置拖拽都是移动那一张 —— 包括它已经跑到画布外看不见的时候，照样能拖回来。
+So the split is: **the layer list decides which one, the canvas decides how.**
+Once a layer is selected, dragging anywhere on the canvas moves that layer,
+including when it has gone off the canvas and out of sight. It can still be
+dragged back.
 
-### 手柄跟着图走，包括画布外
+### Handles follow the image, including off the canvas
 
-四角手柄始终在图层真实的角上，图超出画布时手柄也跟着出去。这靠的是画布外那圈可视区（下一节）—— 有地方画，也有地方点。
+The four corner handles always sit on the layer's real corners, and they leave
+the canvas when the image does. This relies on the visible margin around the
+canvas (see the section on it below), which gives them somewhere to be drawn and
+somewhere to be clicked.
 
-只有图**远到超出那圈可视区**时，手柄才会在边缘停住，外面套一圈细框表示「这个手柄挪进来了」；再远就真的点不到了。这时**只有手柄的位置挪了，缩放的支点没挪** —— 拖右下角，支点仍然是那个远在外面的真实左上角。
+Only when the image is **so far out that it leaves that margin** does a handle
+stop at the edge, with a thin ring around it meaning "this handle was moved in".
+Any further and it really would be unclickable. In that case **only the handle's
+position moved; the scaling pivot did not**. Drag the bottom-right handle and
+the pivot is still the real top-left corner, far outside.
 
-代价是画布画得比原来小一点：整圈可视区必须完整落在窗口内，否则跑到窗口外的手柄一样点不到。状态栏的「显示 xx%」就是这个缩放比。
+The cost is that the canvas is drawn a little smaller than before: the whole
+margin has to fit inside the window, or handles outside the window would be just
+as unreachable. The "显示 xx%" (display xx%) in the status bar is that zoom
+ratio.
 
-### 吸附：为什么没用现成的库
+### Snapping: why no off-the-shelf library
 
-这个能力很通用（Figma / Sketch / PS 都有，叫 smart guides / snapping），但**浏览器没有原生 API** —— 它不像 CSS `scroll-snap` 那样是平台能力。现成的库都有，但都不是「吸附」这一个能力的独立包，而是整套 canvas 交互框架：
+The capability is common (Figma, Sketch, and Photoshop all have it, as smart
+guides or snapping), but **the browser has no native API for it**. It is not a
+platform feature the way CSS `scroll-snap` is. Libraries exist, but none of them
+is a standalone "snapping" package; each is a whole canvas interaction
+framework:
 
-| 库 | 解包体积 |
+| Library | Unpacked size |
 |---|---|
 | moveable | 2.4 MB |
 | interactjs | 1.4 MB |
 | konva | 1.5 MB |
 | fabric | 22 MB |
 
-这个项目已经有自己的交互层（撤销、手柄贴边、混合模式渲染都挂在上面），引任何一个都得推翻重写；而且它们是 npm 包，这里是 `file://` 零依赖，还得内联 UMD 构建。算法本身就几十行，见 [`js/snap.js`](js/snap.js)。
+This project already has its own interaction layer (undo, edge-clamped handles,
+and blend-mode rendering all hang off it), and adopting any of these would mean
+rewriting it. They are also npm packages, while this runs from `file://` with
+zero dependencies, so a UMD build would have to be inlined. The algorithm itself
+is a few dozen lines; see [`js/snap.js`](js/snap.js).
 
-**真正值钱的是手感规则，不是算法**，那几条各家做法一致：
+**The valuable part is the feel, not the algorithm**, and every tool agrees on
+these rules:
 
-1. **吸附半径按屏幕像素算，不是画布像素** —— 否则视图缩放时黏性手感会变。
-2. **永远吸附「意图位置」，不能吸附已经吸附过的位置** —— 把吸附结果喂回去，图层会焊死在线上：每一帧都从半径内重新吸附，鼠标永远逃不出去。基于原始指针位移就没这问题，滑过半径自然脱离，也不需要额外调一个「逃逸距离」。
-3. **画出吸到了哪** —— 不然图层突然跳一下看起来就是 bug。
-4. **留一个修饰键关掉它** —— 总有那么一次它碍事。
+1. **Snap radius is measured in screen pixels, not canvas pixels.** Otherwise
+   the stickiness changes when the view is zoomed.
+2. **Always snap the intended position, never an already-snapped one.** Feed the
+   snapped result back in and the layer welds to the line: every frame re-snaps
+   from inside the radius and the pointer can never escape. Working from the raw
+   pointer delta avoids this. The layer releases naturally once it slides past
+   the radius, and no separate "escape distance" needs tuning.
+3. **Draw what it snapped to.** Otherwise a layer that suddenly jumps looks like
+   a bug.
+4. **Keep a modifier key that turns it off.** There is always one time it gets
+   in the way.
 
-移动和缩放的吸附是两套数学。移动有两个独立的轴，可以同时吸附 x 和 y；**缩放只有一个自由度**（等比），角点的两个坐标都是 scale 的函数，所以最多只能满足一条线。角点沿着从锚点出发的射线走：
+Moving and scaling snap with different math. Moving has two independent axes and
+can snap x and y at once. **Scaling has one degree of freedom** (it is uniform):
+both coordinates of the corner are functions of the scale, so at most one line
+can be satisfied. The corner travels along a ray from the anchor:
 
 ```
-corner(k) = anchor + (corner0 − anchor) × k,   k = scale / 起始scale
+corner(k) = anchor + (corner0 − anchor) × k,   k = scale / starting scale
 ```
 
-要让某个坐标落在线上，反解出 k 就是一次除法，取半径内最近的那条。
+Landing one coordinate on a line means solving for k, which is a single
+division. The nearest line within the radius wins.
 
-### 画布外的部分一直显示
+### The part outside the canvas is always shown
 
-画布外画着一圈半透明预览，常驻，不只是拖动的时候。没有它，一张比画布大的图**正在被拖的那部分恰好是看不见的那部分**，只能凭感觉猜自己把图拉成了什么样。
+A translucent preview is drawn around the canvas all the time, not only while
+dragging. Without it, an image larger than the canvas has **the part being
+dragged be exactly the part that is invisible**, and you can only guess what you
+have stretched it into.
 
-画得很淡（22%）：这一圈是导出时会被裁掉的东西，不该跟真正的画面抢注意力。外缘用 CSS 遮罩渐隐，否则预览会停在一条笔直的硬边上，那条边看起来像渲染 bug 而不像「预览到此为止」。画布本身的描边相应加亮了 —— 现在它是区分「会被导出」和「会被裁掉」的唯一界线。
+It is drawn faint (22%): this ring is what the export will crop away, and it
+should not compete with the real picture. The outer edge fades out through a CSS
+mask; otherwise the preview would end on a straight hard edge that reads as a
+rendering bug rather than "the preview stops here". The canvas's own outline was
+brightened to match, since it is now the only boundary between what gets
+exported and what gets cropped.
 
-实现上踩了个坑：canvas 的 `globalAlpha` 是**绝对值不是累乘**，在外层设一次会被 `drawLayer` 内部的赋值直接覆盖，预览就变成全不透明了。截图上看着淡完全是 CSS 遮罩在起作用，差点蒙混过去 —— 是 e2e 里读实际像素 alpha 的断言（255 而不是 56）抓住的。淡化必须折进每个图层自己的 alpha 里。
+One pitfall in the implementation: canvas `globalAlpha` is **an absolute value,
+not cumulative**. Setting it once in the outer scope is overwritten by the
+assignment inside `drawLayer`, and the preview became fully opaque. It looked
+faint in screenshots purely because of the CSS mask, and it nearly slipped
+through. An e2e assertion that reads the actual pixel alpha (255 instead of 56)
+caught it. The fade has to be folded into each layer's own alpha.
 
-### 叠加方式：为什么默认是「正片叠底」
+### Blend mode: why the default is multiply
 
-纯色背景的图直接叠在一起，**上面那张的白底会把下面完全盖住**，洋葱皮就失效了 —— 降低不透明度也没用，只会让画面灰蒙蒙一片，不会露出下层的主体。
+Images with a solid background, stacked directly, have **the upper image's white
+background cover the lower one completely**, and onion skinning stops working.
+Lowering the opacity does not help; it only turns everything a hazy gray without
+revealing the subject underneath.
 
-正片叠底解决这个：白色乘任何颜色都等于那个颜色，所以白底自动「消失」，几张图的主体能同时看见。深底素材用「滤色」，是同一个原理的反向。透明 PNG 用「正常」。
+Multiply fixes this: white times any color equals that color, so the white
+background disappears by itself and several subjects are visible at once.
+Dark-background assets use screen, the same principle in reverse. Transparent
+PNGs use normal.
 
-导入时会采样素材边缘的亮度自动选好，一般不用管。
+On import the edge brightness of the asset is sampled and the mode is chosen
+automatically, so this usually needs no attention.
 
-### 压缩：停止条件是画质，不是体积
+### Compression: the stop condition is quality, not size
 
-原本的想法是「一直压到体积不再变化」。实测下来这个点**不存在** —— 拿一张复杂纹理测，从 q100 一路降到 q30，每降一档仍然省 7–15%：
+The original idea was "keep compressing until the size stops changing".
+Measurement showed that this point **does not exist**. On a complex texture,
+going from q100 all the way down to q30 still saved 7–15% per step:
 
 ```
 q100  645.7 KB
@@ -116,149 +203,272 @@ q 90  113.7 KB  −24%
 q 85   91.9 KB  −19%
  ...
 q 35   26.5 KB  −14%
-q 30   23.0 KB  −13%      ← 还在降，永远等不到「不变」
+q 30   23.0 KB  −13%      ← still falling; "unchanged" never arrives
 ```
 
-体积曲线没有拐点，只按体积停就一定会一路压到质量下限，不管那时画质烂成什么样。
+The size curve has no knee. Stopping on size alone always runs down to the
+quality floor, however bad the picture looks by then.
 
-所以改成按画质停：每压一档，都把结果解码回来和原图逐像素比对结构相似度（SSIM），**压到再降一档就要露出痕迹为止，然后退回上一档**。这才是「压到不能再压」真正的含义。
+So it stops on quality instead: at every step the result is decoded and compared
+with the original pixel by pixel using structural similarity (SSIM), **down to
+the point where one more step would start to show, then back one step**. That is
+what "compressed as far as it will go" really means.
 
-结果是内容自适应的：
+The result adapts to the content:
 
-| 素材 | 停在 | 相似度 | 体积 |
-|------|------|--------|------|
-| 复杂纹理 | q95 | 99.51% | −77% |
-| 纯色圆形 | q30（下限） | 99.91% | −32% |
+| Asset | Stops at | Similarity | Size |
+|-------|----------|------------|------|
+| Complex texture | q95 | 99.51% | −77% |
+| Solid circle | q30 (floor) | 99.91% | −32% |
 
-体积那一侧仍然留了一道副刹车，给真正会压平的内容（大片纯色）用，但它是**两个条件的合取**：一档同时省下**不足 1 KB** 且**不足 0.5%** 时才收手。只看比例会在大图上过早停 —— 40 万字节的图省 1.9 KB 只算 0.47%，而 1.9 KB 不是零头；只看绝对值又会在小图上第一档就停 —— 6 KB 的图任何一档都省不出 1 KB。两个都不满足才叫「压不动了」。
+A secondary brake remains on the size side, for content that truly flattens out
+(large areas of solid color), but it is **a conjunction of two conditions**: it
+stops only when a step saves both **less than 1 KB** and **less than 0.5%**. A
+ratio alone stops too early on large images: 1.9 KB saved on a 400,000-byte
+image is only 0.47%, and 1.9 KB is not a rounding error. An absolute value alone
+stops on the first step for small images: a 6 KB image cannot save 1 KB at any
+step. Only when neither is met has it really stopped giving.
 
-另外搜索从 **q95** 起步而不是 q100。q100 会关掉大部分量化，体积翻几倍，换来的差别任何指标都测不出来 —— 上表第一行就是证据。
+The search also starts from **q95**, not q100. q100 turns off most quantization
+and multiplies the size several times over, for a difference no metric can
+measure. The first row of the table above is the evidence.
 
-### PNG 也要搜索，旋钮是调色板不是画质
+### PNG needs the search too: the knob is palette size, not quality
 
-原来这里写着「PNG 是无损的，压缩搜索对它不适用」。这句话是错的，而且是这个工具在压缩上最大的一个错。
+This section used to say "PNG is lossless, so the compression search does not
+apply". That sentence was wrong, and it was the biggest compression mistake in
+this tool.
 
-canvas 给出的 PNG **永远是 32 位真彩**，浏览器没有提供「按调色板编码」的接口。而这个工具导出的素材通常只有几十种颜色 —— 实测一张 512×512 的熊猫，**整张图只有 18 种颜色**，却被存成了 92,649 字节。
+The PNG that canvas produces is **always 32-bit truecolor**; the browser offers
+no way to encode with a palette. The assets this tool exports usually have only
+a few dozen colors. A measured 512×512 panda has **18 colors in the whole
+image** and was stored as 92,649 bytes.
 
-这也是网上所有「PNG 压缩」服务在做的事：不是换了更好的 deflate，而是**减色**。所以 PNG 走同一套下降搜索，只是旋钮换成调色板大小：
+This is also what every online "PNG compression" service does: not a better
+deflate, but **color reduction**. So PNG goes through the same descending
+search, with the knob swapped for palette size:
 
-| 素材 | 之前 | 之后 | 省下 | 停在 |
-|------|------|------|------|------|
-| panda.png | 90.5 KB | 25.2 KB | −72% | 16 色 |
-| snake.png | 284.5 KB | 48.5 KB | −83% | 64 色 |
-| crocodile.png | 125.4 KB | 26.5 KB | −79% | 64 色 |
+| Asset | Before | After | Saved | Stops at |
+|-------|--------|-------|-------|----------|
+| panda.png | 90.5 KB | 25.2 KB | −72% | 16 colors |
+| snake.png | 284.5 KB | 48.5 KB | −83% | 64 colors |
+| crocodile.png | 125.4 KB | 26.5 KB | −79% | 64 colors |
 
-同一张 panda.png 传到 tinypng.com 得到 25 KB —— 现在本机离线得到 25.2 KB，跑完三张图一共 0.4 秒。
+The same panda.png uploaded to tinypng.com comes back at 25 KB. It now comes out
+at 25.2 KB locally and offline, and the three images take 0.4 seconds in total.
 
-编码器是手写的（`png.js`，PLTE + tRNS + 按调色板大小降到 1/2/4/8 位/像素），所以「能不能被读出来」是当真验证过的：Pillow、macOS `sips`、以及 Chrome 自己的解码器三方都比对过逐像素结果。
+The encoder is hand-written (`png.js`: PLTE + tRNS, packed down to 1/2/4/8 bits
+per pixel by palette size), so "can it be read back" was verified for real:
+Pillow, macOS `sips`, and Chrome's own decoder were all compared pixel by pixel.
 
-#### 四个坑，都是「看起来对」的那种
+#### Four pitfalls, all of the "looks right" kind
 
-**k-means 会把调色板越修越差。** 减色的标准做法是 median cut 之后再跑几轮 k-means 重新拟合。一开始它让画质**下降**了 —— 32 色的结果从 SSIM 0.961 掉到 0.838。原因是距离函数里把颜色误差乘了 `min(两边的 alpha)`：这个系数依赖**两个**操作数，于是它不再是一个度量，算术平均也就不再是误差最小的中心点，k-means 每一轮都在往远离最优的方向走。改成在**预乘 alpha 空间**里做就同时解决了两件事 —— 透明像素的颜色自然归零（因为乘了 0），而空间仍然是普通的加权欧氏空间。修好之后 k-means 稳定带来 10–14% 的误差下降。
+**k-means made the palette worse with every pass.** The standard approach is
+median cut followed by a few rounds of k-means to refit. At first that
+**lowered** quality: the 32-color result dropped from SSIM 0.961 to 0.838. The
+cause was a distance function that multiplied the color error by `min(alpha of
+both sides)`. That factor depends on **both** operands, so it is no longer a
+metric, the arithmetic mean is no longer the error-minimizing center, and every
+k-means round moved away from the optimum. Working in **premultiplied alpha
+space** fixed two things at once: the color of transparent pixels goes to zero
+naturally (it is multiplied by 0), and the space is still an ordinary weighted
+Euclidean space. After the fix k-means reliably lowers the error by 10–14%.
 
-**SSIM 完全没在看 alpha。** 原来的 `toLuma` 只读 RGB。透明像素的 RGB 是抠图前残留的垃圾数据，任何编码器都不会保留它 —— 于是分数在惩罚一个**定义上就看不见**的差别，而抠图结果大半张图都是透明的。现在 luma 先乘 alpha（等价于把两张图都合成到黑底上再比），并且**额外把 alpha 当作独立通道比一遍，取两者里更差的那个**。
+**SSIM was not looking at alpha at all.** The original `toLuma` read only RGB.
+The RGB of a transparent pixel is garbage left over from before the matte, and
+no encoder preserves it, so the score was penalizing a difference that is
+**invisible by definition**, in results where most of the image is transparent.
+Luma is now multiplied by alpha first (equivalent to compositing both images
+onto black before comparing), and **alpha is additionally compared as its own
+channel, taking the worse of the two**.
 
-**有些破坏 SSIM 结构上就测不出来。** 这个必须写下来，否则会被再犯一次：
+**Some damage is structurally invisible to SSIM.** This has to be written down,
+or it will be repeated:
 
-- 一整张图的 alpha 从 255 变成 254，SSIM 几乎不动 —— 它天生就设计成忽略小的均匀偏移。但这让整个不透明主体变成半透明，合到浅色背景上看得见。解法是把接近 0 和 255 的调色板项**吸附到端点**：这两个值不是刻度上的普通点，它们的含义是「这里有东西」和「这里没有」。
-- 柔边被压成阶梯：实测 SSIM 报 0.9925，而 254 级 alpha 只剩 4 级。SSIM 在 8×8 窗口里把渐变的一个量化台阶看成一个小的常数偏移，正是它要忽略的东西。所以这条约束**直接写出来**：允许 0.1% 的像素例外，其余像素的透明度不得偏移超过 16/255。用百分位而不是最大值 —— 实测有张图最坏的那个像素偏了 29，而 99.9 分位只偏了 5，为几十个找不到的像素放弃 4.7 倍压缩不值得。
-- 台阶很多但每级很小的渐变，上面两条都拦不住：46 级铺满整个渐变，每级只差 5.5，任何逐像素容差都测不出来，但看起来就是一圈圈同心环。**带状伪影是渐变的性质，不是任何单个像素的性质。** 区分它的是「半透明像素占多少」：普通抗锯齿精灵是 0.6–3%（柔边只有一两像素宽），真正的柔性主体（径向渐变、烟、毛发）在 40% 以上。差了一个数量级以上，所以阈值不用取得很聪明 —— 超过 15% 就当成渐变，保留真彩色。这类图本来也是减色收益最小的。
+- When an entire image's alpha goes from 255 to 254, SSIM barely moves. It is
+  designed to ignore small uniform shifts. But that makes the whole opaque
+  subject translucent, which shows on a light background. The fix is to **snap
+  palette entries near 0 and 255 to the endpoints**: those two values are not
+  ordinary points on the scale. They mean "something is here" and "nothing is
+  here".
+- Soft edges crushed into steps: SSIM reported 0.9925 while 254 alpha levels had
+  become 4. Within an 8×8 window SSIM sees one quantization step of a gradient
+  as a small constant shift, exactly what it is built to ignore. So this
+  constraint is **written out directly**: 0.1% of pixels may be exceptions, and
+  the rest may not shift in alpha by more than 16/255. A percentile is used
+  rather than the maximum. In one measured image the worst pixel shifted by 29
+  while the 99.9th percentile shifted by 5, and giving up 4.7× compression for a
+  few dozen pixels nobody can find is not worth it.
+- A gradient with many steps, each very small, gets past both rules above: 46
+  levels spread over the whole gradient, 5.5 apart, undetectable by any
+  per-pixel tolerance, yet it looks like concentric rings. **Banding is a
+  property of the gradient, not of any single pixel.** What distinguishes it is
+  the share of translucent pixels: an ordinary anti-aliased sprite has 0.6–3% (a
+  soft edge one or two pixels wide), while a truly soft subject (radial
+  gradient, smoke, hair) has over 40%. That is more than an order of magnitude
+  apart, so the threshold need not be clever. Above 15% the image is treated as
+  a gradient and kept in truecolor. Such images gain the least from color
+  reduction anyway.
 
-**第四个坑：不该抖动（dithering）。** 教科书说要抖动，那是针对**外部给定**的固定调色板（网页安全色、主机硬件调色板）说的，不适用于为这张图现拟合出来的调色板。实测在搜索的每一档上，Floyd–Steinberg 都让文件**大 15–30%**、SSIM 还**更低** —— 两个方向同时变差。抖动是拿带状换噪点，而噪点恰好是 deflate 唯一建模不了的东西；它换来的那点抗带状又只在相似度底线本来就会拒绝的档位上才有意义。代码保留了实现（`{ dither: true }`），只是不做默认。
+**The fourth pitfall: do not dither.** Textbooks say to dither, but that advice
+is for a fixed palette **given from outside** (web-safe colors, console hardware
+palettes), not for a palette fitted to this very image. Measured at every step
+of the search, Floyd–Steinberg made the file **15–30% larger** and the SSIM
+**lower**, worse in both directions at once. Dithering trades banding for noise,
+and noise is the one thing deflate cannot model. The little anti-banding it buys
+only matters at steps the similarity floor would reject anyway. The
+implementation is kept (`{ dither: true }`) but is not the default.
 
-#### 第五个坑，也是最贵的一个：该切哪个盒子，看的是「切完能省多少」
+#### The fifth pitfall, and the most expensive: which box to split depends on how much the split saves
 
-median cut 每一步都要挑一个颜色盒子切开。原来挑的是**当前总误差最大**的那个 —— 听起来天经地义，实际上它让文件白白大了一倍还多。
+Median cut picks one color box to split at each step. It used to pick the one
+with **the largest current total error**. That sounds self-evident, and in
+practice it more than doubled the file size for nothing.
 
-总误差是对像素求和的，所以它被**面积**主导：一片占了大半张图、颜色只差一两个单位的海洋，总误差比一小块横跨半个色域的区域还大。于是海洋被切了一次、两次、七次。实测一张 256×256 的地球图，28 色的调色板里**有 7 个条目挤在同一个 6 单位宽的蓝色立方体里**，相邻像素于是在这 7 个几乎一样的条目之间来回跳 —— 索引流从一长串连续的相同值变成了噪声，而噪声正是 deflate 唯一压不动的东西。同一张图：
+Total error is summed over pixels, so it is dominated by **area**: an ocean
+covering most of the image, with colors one or two units apart, has a larger
+total error than a small region spanning half the gamut. So the ocean was split
+once, twice, seven times. In a measured 256×256 image of the Earth, the 28-color
+palette had **7 entries crowded into one 6-unit-wide blue cube**, and
+neighboring pixels jumped back and forth among those 7 nearly identical entries.
+The index stream went from long runs of identical values to noise, and noise is
+the one thing deflate cannot compress. The same image:
 
-| | 调色板 | 索引流横向跳变 | 文件 |
+| | Palette | Horizontal index transitions | File |
 |---|---|---|---|
-| 按「当前误差」切 | 28 色 | 17,959 次 | 12,569 B |
-| 按「切完能省多少」切 | 28 色 | 6,526 次 | **5,405 B** |
-| tinypng.com | 28 色 | 7,298 次 | 5,564 B |
+| Split by current error | 28 colors | 17,959 | 12,569 B |
+| Split by error saved | 28 colors | 6,526 | **5,405 B** |
+| tinypng.com | 28 colors | 7,298 | 5,564 B |
 
-判据换成**切开后能减少多少误差**，海洋就自己出局了 —— 它本来就已经等于自己的均值，切开省不下什么。同时切点也从「加权中位数」（一条关于平衡的规则）换成**扫描所有切点取误差最小的那个**（一条关于误差的规则），前缀和一趟扫完，知道最优切点和瞎猜一样便宜。
+With the criterion changed to **how much error the split removes**, the ocean
+drops out by itself: it already equals its own mean, and splitting it saves
+nothing. The cut point also changed from the weighted median (a rule about
+balance) to **scanning every cut point for the one with the least error** (a
+rule about error). With prefix sums it is a single pass, so knowing the optimal
+cut costs the same as guessing.
 
-度量、阶梯、停止条件都没动，只换了「下一个切谁」。实测在真实图片上：
+The metric, the ladder, and the stop conditions were untouched; only "who gets
+split next" changed. Measured on real images:
 
-| 素材 | 之前 | 之后 | 省下 |
-|------|------|------|------|
+| Asset | Before | After | Saved |
+|-------|--------|-------|-------|
 | earth.png 256×256 | 10.4 KB | 4.7 KB | −55% |
 | cover.png 1254×1254 | 198.2 KB | 136.8 KB | −31% |
 | balls.png 900×1948 | 157.6 KB | 100.3 KB | −36% |
-| 截图 1179×2556 | 151.2 KB | 120.3 KB | −20% |
+| Screenshot 1179×2556 | 151.2 KB | 120.3 KB | −20% |
 
-SSIM 在每一行上都基本没变（±0.003），搜索耗时也没变（大图 +3%）。
+SSIM is essentially unchanged on every row (±0.003), and so is the search time
+(+3% on large images).
 
-#### 柔边容差跟着「相似度底线」走
+#### Soft-edge tolerance follows the similarity floor
 
-上面那条 16/255 的透明度漂移上限是个保守数字，而它 —— 不是 SSIM —— 才是柔边素材真正的刹车：地球图停在 32 色时漂移才 15，再往下每一档都是被这条拦下的，而那些档位的 SSIM 还在 0.99 以上。
+The 16/255 alpha drift cap above is a conservative number, and it, not SSIM, is
+the real brake for soft-edged assets: the Earth image stops at 32 colors with a
+drift of only 15, and every step below that is blocked by this cap while SSIM is
+still above 0.99.
 
-「人到底能接受多少漂移」的参照系就是 tinypng：它给同一张图的输出，同一个百分位上漂移 **27**，没人觉得有问题。所以严格档（99.5% / 99% / 98%）保持 16，而**「最小体积」这一档放宽到 32** —— 仍然低于业界工具实际交付的水平。选了最小体积，地球图就一路走到 16 色 4.7 KB，比 tinypng 的 5.4 KB 还小，肉眼看不出区别。
+The reference for how much drift people accept is tinypng: its output for the
+same image drifts by **27** at the same percentile, and nobody sees a problem.
+So the strict tiers (99.5% / 99% / 98%) keep 16, while **the "最小体积"
+(smallest size) tier relaxes to 32**, still below what the industry tool ships.
+With smallest size selected, the Earth image goes all the way to 16 colors and
+4.7 KB, smaller than tinypng's 5.4 KB with no visible difference.
 
-### 撤销只撤销「编辑」，不撤销「怎么看」
+### Undo reverts edits, not how you look at them
 
-`⌘Z` 回退的是画布尺寸、图层的缩放位移、增删图层。**不会**动参考框、不透明度、叠加方式、导出设置 —— 那些是你观察的方式，不是作品本身。挪了一下图层、顺手调了参考框，再按 `⌘Z` 应该把图层挪回去，而不是把参考框弄没。
+`⌘Z` rolls back the canvas size, each layer's scale and offset, and adding or
+removing layers. It does **not** touch the reference frame, opacity, blend mode,
+or export settings. Those are how you observe the work, not the work itself.
+After moving a layer and then adjusting the reference frame, `⌘Z` should move
+the layer back, not make the frame disappear.
 
-连续动作会合并成一步：拖一次手柄、滚一串滚轮、按住方向键不放，都各算一次撤销，不会让你一像素一像素往回爬。
+Continuous actions merge into one step: one handle drag, one run of wheel
+scrolling, one held arrow key each count as a single undo, so you never crawl
+back one pixel at a time.
 
-### 导出的是原图，不是你看到的叠加效果
+### The export is the original image, not the overlay you see
 
-画布上的叠加、半透明、混合模式**只是给你看的**。导出时每张图单独渲染到干净画布，只应用它自己的缩放和位移，不带任何混合或调暗。
+The stacking, translucency, and blend modes on the canvas are **only for
+viewing**. On export each image is rendered alone onto a clean canvas with only
+its own scale and offset applied, with no blending or dimming.
 
-## 参数
+## Parameters
 
-| 控件 | 默认 | 说明 |
-|------|------|------|
-| 画布 | 512×512 | 输出尺寸，16–8192px |
-| 叠加方式 | 自动 | 正片叠底 / 滤色 / 正常 |
-| 未选中图层不透明度 | 55% | 洋葱皮的强度 |
-| 只显示选中图层 | 关 | 临时隔离一张看细节 |
-| 参考框 | 70% | 对齐目标，方框或圆形 |
-| 格式 | PNG | PNG / WebP / JPEG |
-| 相似度底线 | 95%（最小体积） | 越高画质越好体积越大；PNG 也用它 |
+| Control | Default | Notes |
+|---------|---------|-------|
+| Canvas (画布) | 512×512 | Output size, 16–8192px |
+| Blend mode | Auto | Multiply (正片叠底) / screen (滤色) / normal (正常) |
+| Unselected layer opacity (未选中图层不透明度) | 55% | Strength of the onion skin |
+| Show only the selected layer (只显示选中图层) | Off | Isolate one image temporarily to see detail |
+| Reference frame (显示参考框) | 70% | Alignment target, square or circle |
+| Format | PNG | PNG / WebP / JPEG |
+| Similarity floor | 95% (最小体积, smallest size) | Higher means better quality and larger files; PNG uses it too |
 
-## 已知限制
+## Known limitations
 
-**放大倍数大了画质救不回来。** 70px 的主体拉到 358px 是 5 倍放大，边缘模糊带本身就有十几像素宽。工具不拦你，但没有重采样算法能凭空造出细节 —— 真解法是重新导出高分辨率源图。
+**Quality cannot be rescued at large magnification.** Stretching a 70px subject
+to 358px is a 5× enlargement, and the blurred edge band alone is more than ten
+pixels wide. The tool does not stop you, but no resampling algorithm can invent
+detail. The real fix is to re-export a higher-resolution source.
 
-**JPEG 没有透明通道。** 选 JPEG 导出时透明区域会填白。要保留透明就用 WebP 或 PNG。
+**JPEG has no alpha channel.** Transparent areas are filled with white when
+exporting JPEG. Use WebP or PNG to keep transparency.
 
-**PNG 减色是有损的，柔边占比大的图会自动放弃减色。** 调色板只有 256 项，颜色和 alpha 共用。柔边就是主体本身的图（径向渐变、烟、毛发）放不进去，这类图会保留 32 位真彩，日志里显示「无损」。想知道每张图停在哪一档，鼠标悬停在日志行上。
+**PNG color reduction is lossy, and images with a large share of soft edges skip
+it automatically.** The palette has only 256 entries, shared by color and alpha.
+Images whose soft edge is the subject itself (radial gradients, smoke, hair) do
+not fit; they stay 32-bit truecolor and the log shows "无损" (lossless). Hover
+over a log line to see which step each image stopped at.
 
-**主体对齐靠眼睛，不是算法。** 这是有意的 —— 你要的就是手动控制。工具不会替你判断「主体」是什么，只提供参考框、吸附和读数让你自己对准。
+**Subject alignment is done by eye, not by an algorithm.** This is deliberate:
+manual control is the point. The tool does not decide what the subject is; it
+only provides the reference frame, snapping, and readouts so you can line it up
+yourself.
 
-## 开发
+## Development
 
 ```bash
-node --test tests/*.test.js      # 187 个单元测试，无需依赖
-node tests/e2e.mjs               # 真实 Chrome 端到端（需要 playwright）
+node --test tests/*.test.js      # 187 unit tests, no dependencies
+node tests/e2e.mjs               # end to end in a real Chrome (needs playwright)
 ```
 
-e2e 会真的上传图片、真实拖拽四角手柄、真实拖出吸附、真的按 `⌘Z`、真的按 `Backspace` 删图、真的导出，然后解压 ZIP、用 `sips` 校验每个文件的格式和尺寸。手写的 ZIP 打包器额外用系统 `ditto` 和 Python `zipfile` 交叉验证过（含中文文件名）。
+The e2e run really uploads images, really drags the corner handles, really drags
+into a snap, really presses `⌘Z`, really deletes an image with `Backspace`, and
+really exports, then unzips the ZIP and checks every file's format and
+dimensions with `sips`. The hand-written ZIP packer was additionally
+cross-checked with the system `ditto` and Python's `zipfile`, including Chinese
+filenames.
 
-手写的 PNG 编码器验证得更狠一些，因为「浏览器碰巧能打开」不等于「文件是对的」：单元测试解析出每个 chunk 逐个校验 CRC、inflate 出 IDAT 把扫描线按 1/2/4/8 位拆回索引和输入比对（含宽度不是整字节倍数的情况）；e2e 里再让 **Chrome 自己的解码器**读回一张带 alpha 渐变的图，逐通道比对。
+The hand-written PNG encoder is verified harder, because "the browser happens to
+open it" is not the same as "the file is correct". The unit tests parse every
+chunk and check each CRC, inflate IDAT, and unpack the scanlines at 1/2/4/8 bits
+back into indices to compare with the input (including widths that are not a
+whole number of bytes). The e2e run then has **Chrome's own decoder** read back
+an image with an alpha gradient and compares it channel by channel.
 
-测试素材是**跑的时候现生成的**，不入库 —— 二进制文件没人 review 得动，还得手工保持同步。生成它的代码同时也说明了这套测试到底依赖素材的哪些性质（白底、主体尺寸跨度要够大）。
+Test assets are **generated at run time** and not checked in. Nobody can review
+a binary file, and it would have to be kept in sync by hand. The code that
+generates them also documents which properties of the assets the tests depend on
+(white background, a wide enough range of subject sizes).
 
 ```
 aligner/
-├── index.html      结构
-├── styles.css      视觉
-├── fonts.css       内嵌字体（Chivo Mono，latin subset，data URI）
+├── index.html      structure
+├── styles.css      visuals
+├── fonts.css       embedded font (Chivo Mono, latin subset, data URI)
 └── js/
-    ├── state.js    状态、不可变更新、撤销栈、手柄几何
-    ├── render.js   画布绘制、混合模式
-    ├── interact.js 拖拽、滚轮锚点缩放、键盘
-    ├── snap.js      吸附对齐（移动 + 缩放两套解法）
-    ├── ssim.js     结构相似度（luma + alpha 两个通道取更差者）
-    ├── quantize.js 减色（median cut + k-means，预乘 alpha 空间）
-    ├── png.js      手写索引 PNG 编码器（PLTE/tRNS/位深打包）
-    ├── compress.js 压缩搜索（画质档位 / 调色板档位，两把旋钮一套停止规则）
-    ├── exporter.js 图层渲染、命名与打包
-    ├── zip.js      ZIP 打包（store-only，手写）
-    └── main.js     装配
+    ├── state.js    state, immutable updates, undo stack, handle geometry
+    ├── render.js   canvas drawing, blend modes
+    ├── interact.js dragging, cursor-anchored wheel zoom, keyboard
+    ├── snap.js     snapping (separate solutions for move and scale)
+    ├── ssim.js     structural similarity (worse of the luma and alpha channels)
+    ├── quantize.js color reduction (median cut + k-means, premultiplied alpha)
+    ├── png.js      hand-written indexed PNG encoder (PLTE/tRNS/bit-depth packing)
+    ├── compress.js compression search (quality steps / palette steps, one stop rule)
+    ├── exporter.js layer rendering, naming, and packaging
+    ├── zip.js      ZIP packaging (store-only, hand-written)
+    └── main.js     wiring
 ```
 
-代码用普通 `<script>` 标签而不是 ES module —— 这是 `file://` 下能直接跑起来的前提，`import` 会被 CORS 拦掉。
+The code uses plain `<script>` tags rather than ES modules. That is what lets it
+run straight from `file://`, where `import` is blocked by CORS.

@@ -1,133 +1,229 @@
 # Matte
 
-把纯色背景的图转成带透明通道的图。黑底、白底、绿幕都行，头发和柔边不会被切平。
+**English** | [简体中文](./README.zh-CN.md)
 
-> Game Studio 工具板的一件工具。工具板在 [`../index.html`](../index.html)，
-> 页面左上角的「← 工具板」可以随时回去。
+Turn an image with a solid-color background into one with an alpha channel.
+Black, white, and green screen all work, and hair and soft edges are not
+flattened.
 
-## 怎么用
+> One of the tools on the Game Studio board. The board is at
+> [`../index.html`](../index.html) ([about](../README.md)), and the "← 工具板"
+> link in the top-left corner of the page takes you back at any time.
 
-拖图片进来（或按 `⌘V` 粘贴）→ 自动判断背景类型 → 看结果 → 导出 ZIP。多张图可以一起导入，**每张图有自己的一套参数**。选中某张图按 `Backspace`（或 `Delete`）删掉它。
+The interface is in Chinese. Control names below are given in English.
 
-顶部三个视图随时切换：**结果**（抠完的样子）、**Alpha**（透明度本身，灰度）、**原图**。旁边三个按钮换预览底色——**换着看很重要**，棋盘格上看不出的边缘残留，换到纯白底上可能一眼就露。
+## How to use it
 
-## 为什么不用 AI 做这件事
+Drag images in (or press `⌘V` to paste) → the background type is detected
+automatically → check the result → export a ZIP. Several images can be imported
+together, and **each image has its own set of parameters**. Select an image and
+press `Backspace` (or `Delete`) to remove it.
 
-纯色背景的抠图有解析解，不需要模型来猜。
+Three views at the top can be switched at any time: **Result** (结果, the matted
+image), **Alpha** (the transparency itself, in grayscale), and **Original**
+(原图). The three buttons beside them change the preview backdrop. **Switching
+backdrops matters**: edge residue that is invisible on the checkerboard can be
+obvious on pure white.
 
-每张合成图都满足成像方程：
+## Why not use AI for this
+
+Matting a solid-color background has a closed-form solution; no model needs to
+guess.
+
+Every composited image satisfies the compositing equation:
 
 ```
-你看到的 C = α·F + (1−α)·B        F=前景色  B=背景色  α=不透明度
+observed C = α·F + (1−α)·B        F = foreground  B = background  α = opacity
 ```
 
-`B` 未知时这是三个方程四个未知数，欠定——**这正是抠图模型存在的理由**。但纯色背景的 `B` 是已知的，黑底时方程直接塌缩成 `C = α·F`。
+With `B` unknown this is three equations in four unknowns, underdetermined, and
+**that is exactly why matting models exist**. But for a solid background `B` is
+known, and on black the equation collapses to `C = α·F`.
 
-关键差别不在速度，在于**它根本不做「分割」这个动作**。分割模型必须回答「这个像素属不属于主体」，所以它可以答错——胡子、毛发、运动模糊都是它容易答错的地方。反解不问这个问题：一根头发盖住某个像素 30%，算出来就是 α=0.3，因为算式没有别的地方可以放这个值。
+The key difference is not speed. It is that **this never performs
+"segmentation" at all**. A segmentation model must answer "does this pixel
+belong to the subject", so it can answer wrong, and whiskers, hair, and motion
+blur are where it tends to. Solving the equation does not ask that question: if
+a hair covers 30% of a pixel, the result is α=0.3, because the formula has
+nowhere else to put that value.
 
-工具里那张「柔边测试图」导出后有 **246 个不同的 alpha 值**，如果走分割模型，那里只会有 0 和 255 两个。
+The soft-edge test image in the tool exports with **246 distinct alpha values**.
+Through a segmentation model there would be only two, 0 and 255.
 
-### 但它有个诚实的局限
+### An honest limitation
 
-黑底上 `C = α·F` 仍然是三个方程四个未知数，α 和 F 分不开。**严格确定的只有乘积 α·F**（预乘色），任何一种拆法重新合成到黑底上都一模一样。
+On black, `C = α·F` is still three equations in four unknowns; α and F cannot be
+separated. **Only the product α·F is strictly determined** (the premultiplied
+color), and every way of splitting it composites back onto black identically.
 
-要给出单独的 α，代码假设「前景至少有一个通道接近满值」——这是所有 luma keyer 的共同假设，对大部分素材成立。不成立时（深色主体在黑底上）α 会被低估。
+To report a separate α, the code assumes that the foreground has at least one
+channel near full value. Every luma keyer makes this assumption, and it holds
+for most assets. When it does not (a dark subject on black), α is
+underestimated.
 
-所以工具**导入时会从图像直方图算出阈值**，而不是用固定默认值：`不透明阈值` 取主体实际的峰值，`透明阈值` 取背景噪点之上一点。一个峰值只有 232 的橙色圆盘，如果用固定的 92% 默认值，导出来会永远带一层薄透明——这不是假想问题，是开发过程中真实撞到的。
+So the tool **derives its thresholds from the image histogram on import**
+instead of using fixed defaults: the opaque threshold takes the subject's actual
+peak, and the transparent threshold sits just above the background noise. An
+orange disc whose peak is only 232, with a fixed 92% default, would export with
+a permanent thin layer of transparency. That is not hypothetical; it happened
+during development.
 
-## 主体内部和背景同色怎么办
+## When the inside of the subject matches the background
 
-一只黑眼睛的熊猫放在黑底上：**眼睛和背景在像素层面是同一个颜色**，解出来的 α 一模一样，都是 0。滑块调不出区别——任何只看单个像素的算法，要么两个都留，要么两个都抠。
+A panda with black eyes on a black background: **the eyes and the background are
+the same color at the pixel level**, and the solved α is identical, 0 for both.
+No slider can tell them apart. Any algorithm that looks at single pixels either
+keeps both or removes both.
 
-区别不在颜色，在**位置**：背景是能从画面边缘连过来的那一片，眼睛是被主体围住的。所以工具从画面四边做一次连通域填充，**填不到的透明区域就不是背景**，原样还给你。
+The difference is not color but **position**: the background is the region
+connected to the image border, and the eyes are enclosed by the subject. So the
+tool flood-fills from the four edges, and **transparent regions the fill cannot
+reach are not background** and are given back untouched.
 
-「抠除范围」两个选项：
+The removal scope (抠除范围) has two options:
 
-| 选项 | 行为 |
-|------|------|
-| **主体外背景**（默认） | 只抠掉从画面边缘连过来的背景。熊猫的黑眼睛、白底上的白衣领都会保留 |
-| 全图同色 | 整张图凡是符合背景色的像素都抠掉。主体真有镂空、或者要从贴图里剔掉某个颜色时用 |
+| Option | Behavior |
+|--------|----------|
+| **Background outside the subject** (主体外背景, default) | Removes only the background connected to the image border. The panda's black eyes, or a white collar on a white background, are kept |
+| Same color anywhere (全图同色) | Removes every pixel in the image that matches the background color. Use it when the subject really has holes, or to strip one color from a texture |
 
-两个细节：
+Two details:
 
-- 洞的**边缘**是眼睛和毛的混合，α 落在中间，本身不算洞。不管它的话导出后每只眼睛都会带一圈淡淡的半透明描边，所以封洞时会连着往外吃 2px 的过渡带——刚好覆盖抗锯齿，又够不到主体自己的轮廓。
-- 连通用四邻域而不是八邻域。八邻域会从**斜着走的一像素细线**里漏过去，而细线描边的插画正是最需要这个功能的素材。
+- The **edge** of a hole is a blend of eye and fur, with α in between, so it is
+  not itself a hole. Left alone, every eye would export with a faint translucent
+  outline, so sealing a hole also eats 2px outward into the transition band.
+  That is just enough to cover anti-aliasing without reaching the subject's own
+  outline.
+- Connectivity is 4-neighbor, not 8-neighbor. 8-neighbor leaks through
+  **one-pixel lines running diagonally**, and thin-outlined illustrations are
+  exactly the assets that need this feature most.
 
-对 AI 抠图同样生效：模型对深色眼窝也会给出一个低置信度的凹陷，处理方式一样。
+The same applies to AI matting: the model also gives dark eye sockets a
+low-confidence dip, and it is handled the same way.
 
-## 参数
+## Parameters
 
-| 控件 | 说明 |
-|------|------|
-| 背景类型 | 黑底 / 白底 / 取色（含绿幕）。导入时自动判断 |
-| 抠除范围 | 主体外背景（默认）/ 全图同色，见上一节 |
-| 背景色 | 取色模式下用，可以直接在图上点取 |
-| 容差 | 取色模式下，离背景色多远才算前景 |
-| 透明阈值 | 调高清掉背景噪点和压缩杂色 |
-| 不透明阈值 | 调低让主体更实心，深色主体在黑底上尤其需要 |
-| 去溢色 | 绿幕的光打到主体上，这一项把它拉回来 |
+| Control | Notes |
+|---------|-------|
+| Background type | Black / white / picked color (including green screen). Detected on import |
+| Removal scope | Background outside the subject (default) / same color anywhere; see the previous section |
+| Background color | For picked-color mode; can be picked directly on the image |
+| Tolerance | In picked-color mode, how far from the background color counts as foreground |
+| Transparent threshold | Raise it to clear background noise and compression artifacts |
+| Opaque threshold | Lower it to make the subject more solid; dark subjects on black especially need it |
+| Despill | Green-screen light spills onto the subject; this pulls it back |
 
-「把这套参数应用到全部图片」在一批同源素材上很省事，但**不同来源的图不要这么干**——阈值是按图算的，硬套过去就失去了自动的意义。
+"Apply these parameters to all images" (把这套参数应用到全部图片) saves effort
+on a batch from one source, but **do not use it across images from different
+sources**. The thresholds are computed per image, and forcing them across throws
+away the point of computing them.
 
-## 导出会压到刚好看不出差别
+## Exports are compressed to just before the difference shows
 
-抠图结果通常是**大片纯色加一圈柔边**，这正好是减色调色板最擅长的形状。canvas 给出的 PNG 永远是 32 位真彩，对这种素材是错的容器：实测同一批图，减色后普遍只剩原来的 **20–30%**。
+A matte result is usually **large flat areas plus a ring of soft edge**, which is
+exactly the shape a reduced palette handles best. The PNG that canvas produces
+is always 32-bit truecolor, the wrong container for such assets: on the same
+batch, color reduction typically leaves **20–30%** of the original size.
 
-PNG 和 WebP 都会逐档压缩，每档把结果和抠图输出逐像素比对结构相似度，**压到再降一档就要露出痕迹时退回上一档**。PNG 降的是调色板大小，WebP 降的是画质。导出日志里会写每张图停在哪一档、省了多少。
+Both PNG and WebP are compressed step by step. Each step is compared with the
+matte output pixel by pixel using structural similarity, and **the search backs
+off one step when the next would start to show**. PNG reduces the palette size;
+WebP reduces quality. The export log records which step each image stopped at
+and how much was saved.
 
-搜索的实现和判据（包括为什么 SSIM 看不见柔边被压成阶梯、以及为什么柔边占比大的图会自动放弃减色）与 Canvas Aligner 共用同一份 `compress.js`，细节写在[那边的 README](../aligner/README.md#png-也要搜索旋钮是调色板不是画质)。
+The search implementation and its criteria (including why SSIM cannot see soft
+edges crushed into steps, and why images with a large share of soft edges skip
+color reduction) are the same `compress.js` that Canvas Aligner uses. The
+details are in
+[its README](../aligner/README.md#png-needs-the-search-too-the-knob-is-palette-size-not-quality).
 
-对这个工具来说有一条要特别说明：**柔边占比超过 15% 的图不会被减色。** 256 项调色板要同时装颜色和 alpha，一张径向渐变（柔边占 42%）塞进去只剩 46 级 alpha，看起来是一圈圈同心环——而这恰好是本工具存在的理由。这类图保留 32 位真彩，导出日志显示「无损」。普通抗锯齿素材的柔边只占 0.6–3%，不受影响。
+One point matters especially for this tool: **images whose soft edges exceed 15%
+are not color-reduced.** A 256-entry palette has to hold color and alpha
+together. A radial gradient (42% soft edge) squeezed into it keeps only 46 alpha
+levels and looks like concentric rings, and preserving that gradient is the
+reason this tool exists. Such images stay 32-bit truecolor and the export log
+shows "无损" (lossless). Ordinary anti-aliased assets have soft edges of only
+0.6–3% and are unaffected.
 
-## 背景不是纯色怎么办
+## When the background is not a solid color
 
-工具会告诉你。导入时会量边缘颜色的一致度，**不一致就直接说「这不是纯色背景，纯色抠图对它无能为力」**，而不是让你在滑块上白折腾十分钟。
+The tool tells you. On import it measures how consistent the edge colors are,
+and **if they are not, it says outright that this is not a solid background and
+solid-color matting cannot help**, instead of letting you fight the sliders for
+ten minutes.
 
-这时候用 AI 抠图（BiRefNet lite）。**模型不随仓库走**，第一次点「对这张图运行」时才问你要不要下载，约 109 MB，之后存在浏览器本地，离线可用。
+Use AI matting (BiRefNet lite) in that case. **The model does not ship with the
+repository.** It asks whether to download only the first time you click "run on
+this image", about 109 MB, and is then stored locally in the browser and usable
+offline.
 
-### AI 层的硬性要求
+### Hard requirements of the AI layer
 
-**必须有 WebGPU。** 这不是性能优化，是能不能跑的问题：这个模型的输入固定 1024×1024，中间结果的体积超过 wasm 堆能装下的上限——纯 CPU 后端不是慢，是直接分配失败。所以没有降级路径，浏览器不支持 WebGPU 就用不了，工具会在下载之前就把这话说清楚。
+**WebGPU is required.** This is not a performance optimization; it is whether it
+runs at all. The model's input is fixed at 1024×1024, and its intermediate
+results exceed what the wasm heap can hold. A pure CPU backend is not slow; the
+allocation simply fails. So there is no fallback path: without WebGPU it cannot
+be used, and the tool says so before downloading anything.
 
-**显存大约要 1 GB。** 不够的话会报「显存不足」并告诉你大概需要多少。
+**About 1 GB of GPU memory is needed.** If there is not enough, it reports
+"显存不足" (out of GPU memory) and roughly how much is required.
 
-> **未在真机上验证过。** 开发时的测试环境是软件渲染的 headless 浏览器，跑不动这个模型，所以推理链路只验证到「模型下载、缓存、加载 session 全部成功」，最后一步推理没能实测。第一层（纯色抠图）则是完整验证过的，包括导出文件的像素级检查。如果 AI 层在你机器上报错，请把错误信息发出来。
+> **Not verified on real hardware.** The development test environment was a
+> headless browser with software rendering, which cannot run this model, so the
+> inference path was verified only as far as "model download, caching, and
+> session loading all succeed". The final inference step was not measured. The
+> first layer (solid-color matting) is fully verified, including pixel-level
+> checks of the exported files. If the AI layer fails on your machine, please
+> report the error message.
 
-## 已知限制
+## Known limitations
 
-**导出只有 PNG 和 WebP。** 抠图结果必须带透明通道，JPEG 没有，所以没提供。
+**Export is PNG and WebP only.** A matte result needs an alpha channel, and JPEG
+has none, so it is not offered.
 
-**柔边占比大的图不会被压缩。** 见上一节——这是有意的取舍，不是没做。
+**Images with a large share of soft edges are not compressed.** See the section
+above. This is a deliberate trade-off, not something left undone.
 
-**预览是降采样的。** 超过 1100px 的图预览时会缩小，好让滑块跟手；**导出永远用原始分辨率**，预览的清晰度损失不会进到文件里。
+**The preview is downsampled.** Images over 1100px are shrunk for preview so the
+sliders stay responsive. **Export always uses the original resolution**; the
+preview's loss of sharpness never reaches the file.
 
-**去溢色只在取色模式下生效。** 黑底白底不存在溢色问题，在那里改这个值不会有任何变化。
+**Despill only works in picked-color mode.** Black and white backgrounds have no
+spill, and changing the value there does nothing.
 
-## 开发
+## Development
 
 ```bash
-node --test tests/*.test.js    # 64 个单元测试，无需依赖
-node tests/e2e.mjs             # 真实 Chrome 端到端（需要 playwright）
+node --test tests/*.test.js    # 64 unit tests, no dependencies
+node tests/e2e.mjs             # end to end in a real Chrome (needs playwright)
 ```
 
-e2e 会画出各种背景的测试图、真的按 `Backspace` 删图、真的导出 ZIP、解压后**把 PNG 读回来逐像素检查 alpha 通道**——确认柔边确实是渐变而不是硬切（柔边测试图导出后仍有 246 个不同的 alpha 值），确认主体内部确实是全不透明、背景角落确实是全透明。
+The e2e run draws test images on various backgrounds, really deletes an image
+with `Backspace`, really exports a ZIP, and after unzipping **reads the PNG back
+and checks the alpha channel pixel by pixel**. It confirms that soft edges
+really are gradients rather than hard cuts (the soft-edge test image still has
+246 distinct alpha values after export), that the inside of the subject is fully
+opaque, and that the background corners are fully transparent.
 
-最后两条断言是压缩改动的守门人：减色第一版把 alpha 255 挪到了 254，整张图变成半透明，20108 个实心像素一个不剩——是这条断言抓住的，SSIM 完全没反应。
+Those last two assertions guard the compression changes. The first version of
+color reduction moved alpha 255 to 254, the whole image became translucent, and
+not one of 20,108 solid pixels was left. This assertion caught it; SSIM did not
+react at all.
 
 ```
 matte/
 ├── index.html
-├── styles.css      沿用工具板的设计语言
+├── styles.css      follows the board's design language
 ├── fonts.css
 └── js/
-    ├── key.js      成像方程反解 —— 核心
-    ├── detect.js   背景检测 + 「是不是纯色」的判定
-    ├── state.js    状态，每张图独立参数
-    ├── ai.js       BiRefNet 按需下载与推理
-    ├── ssim.js     结构相似度   ┐
-    ├── quantize.js 减色         │ 这五个与 aligner
-    ├── png.js      索引 PNG     │ 逐字节相同
-    ├── compress.js 压缩搜索     │
-    ├── zip.js      ZIP 打包     ┘
-    └── main.js     装配
+    ├── key.js      solving the compositing equation: the core
+    ├── detect.js   background detection and the "is it solid" decision
+    ├── state.js    state, independent parameters per image
+    ├── ai.js       on-demand BiRefNet download and inference
+    ├── ssim.js     structural similarity  ┐
+    ├── quantize.js color reduction        │ these five are
+    ├── png.js      indexed PNG            │ byte-identical to
+    ├── compress.js compression search     │ the ones in aligner
+    ├── zip.js      ZIP packaging          ┘
+    └── main.js     wiring
 ```
